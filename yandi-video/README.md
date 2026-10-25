@@ -251,3 +251,15 @@ node qc_full.js                        # 8 段全 PASS 才交付
 - 中文路径 `file://` 需逐段 `encodeURIComponent`
 - `rm -rf frames/` 会被安全拦截，捕获脚本覆写同名帧即可
 - npm 安装需镜像：`--registry=https://registry.npmmirror.com`
+
+## 工作区清理（每集交付后）
+
+```bash
+cd yandi-video/render/yandi
+node clean_workspace.js            # dry-run
+node clean_workspace.js --apply    # 执行（可释放 6.7GB/两集）
+```
+
+- 删：所有 frames*/ 帧目录、probe*/、qc/、*_draft*.mp4、中间 wav（pre_/full_mix/bgm_track/final_mix/sample_ 等）
+- 留：全部脚本 .js/.html、分镜 *_sb.js/json、sil_full.txt、qc_report*.json、out/ 交付物、node_modules、素材源
+- 已发布成片归档在 `out/@已发/<序号> <标题>/`，待发布在 `out/<序号> <标题>/`

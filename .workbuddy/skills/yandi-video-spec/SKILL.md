@@ -311,3 +311,40 @@ node make_sfx_full_yandi.js       # 音效混音
 ffmpeg -i 成片.mp4 -af ebur128=peak=true -f null -   # 复测 ≈-16.0 LUFS
 node delivery_gate_yandi.js       # 交付总门禁：四查(full+sample)+密度+响度+目录合规，exit≠0 禁止交付
 ```
+
+---
+
+## 十三、项目清理与归档（每集交付后必做）
+
+### 13.1 一键清理
+
+```bash
+cd yandi-video/render/yandi
+node clean_workspace.js            # dry-run：列出将删内容与可释放空间
+node clean_workspace.js --apply    # 实际删除
+```
+
+### 13.2 可删（全部可重跑再生）
+
+| 类别 | 说明 | 再生成本 |
+|---|---|---|
+| `frames*/` 帧目录 | 女娲 12816 + 炎帝 11565 + 样片 2657 + 旧管线 11607 | 12-15 min/片 |
+| `probe*/` `qc/` | 探针/抽帧 jpg | 1-2 min |
+| `render/*/*_draft*.mp4` | 草稿成片（每片 130-160MB） | 3 min |
+| `render/*/` 中间 wav | pre_ / full_mix / mix_with_bgm / bgm_track / final_mix / sample_ / a_seg / b_seg / gap | 3-5 min |
+| `audio/*.wav` | 旧管线中间音频（68MB 级） | — |
+
+实测一次清理释放 **6.7GB**（38,700 帧图 + 31 个中间文件 + 80 张探针帧）。
+
+### 13.3 必须保留
+
+- 全部 `.js / .html / .json / .txt`：管线脚本、分镜数据（`*_sb.js/json`）、`sil_full.txt`、`qc_report*.json`（核验凭证，约 2.4MB）
+- `out/` 交付物；已发布成片归档到 `out/@已发/<序号> <标题>/`
+- `node_modules/`（运行依赖）、`docs/`、README
+- 素材源与配音（在项目根 `006_女娲/ 007_炎帝/ 008_帝辛/`，不在 yandi-video 内，勿动）
+
+### 13.4 下一集开工前检查
+
+1. 工作区已用 `clean_workspace.js` 清干净（无 `frames*` 残留）
+2. 输入齐备：`<集目录>/口播稿.md` + `配音.json`（键名 chunks）+ `配音.wav` + `narration-chunks/*.tight.wav`
+3. 复制 `render/yandi/` 为模板，改 SB 路径与素材目录即可复用（TYPE_CFG 通用引擎 + 10 剪影变体 + 运镜）
