@@ -345,6 +345,13 @@ node clean_workspace.js --apply    # 实际删除
 
 ### 13.4 下一集开工前检查
 
+```bash
+node health_check.js   # 管线健康检查：脚本引用的资产/配音是否齐全
+```
+
+- 检查范围：render 下全部 js/html 的外部引用（output/00X_…）+ 关键输入清单；缺失项会逐条列出
+- 素材源目录统一在 `D:/@kaifa/yandi/output/00X_<集名>/`（006_女娲 / 007_炎帝 / 008_帝辛），脚本一律用该前缀，勿写项目根相对路径
+
 1. 工作区已用 `clean_workspace.js` 清干净（无 `frames*` 残留）
 2. 输入齐备：`<集目录>/口播稿.md` + `配音.json`（键名 chunks）+ `配音.wav` + `narration-chunks/*.tight.wav`
 3. 复制 `render/yandi/` 为模板，改 SB 路径与素材目录即可复用（TYPE_CFG 通用引擎 + 10 剪影变体 + 运镜）
