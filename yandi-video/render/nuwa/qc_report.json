@@ -1,0 +1,134 @@
+{
+ "total": 43.43,
+ "frames": 1303,
+ "scenes": [
+  {
+   "s": 0,
+   "e": 2.83,
+   "type": "hook",
+   "minMoving": 11,
+   "maxTextCov": 10.33,
+   "ok": true
+  },
+  {
+   "s": 2.83,
+   "e": 5.46,
+   "type": "west-gods-a",
+   "minMoving": 6,
+   "maxTextCov": 8.17,
+   "ok": true
+  },
+  {
+   "s": 5.46,
+   "e": 8.93,
+   "type": "west-gods-b",
+   "minMoving": 8,
+   "maxTextCov": 8.21,
+   "ok": true
+  },
+  {
+   "s": 8.93,
+   "e": 11.88,
+   "type": "china-nuwa",
+   "minMoving": 7,
+   "maxTextCov": 6.47,
+   "ok": true
+  },
+  {
+   "s": 11.88,
+   "e": 15.89,
+   "type": "reveal",
+   "minMoving": 11,
+   "maxTextCov": 6.47,
+   "ok": true
+  },
+  {
+   "s": 15.89,
+   "e": 18.02,
+   "type": "three-cards",
+   "minMoving": 9,
+   "maxTextCov": 5.28,
+   "ok": true
+  },
+  {
+   "s": 18.02,
+   "e": 20.12,
+   "type": "mom-analogy",
+   "minMoving": 12,
+   "maxTextCov": 17.65,
+   "ok": true
+  },
+  {
+   "s": 20.12,
+   "e": 24.15,
+   "type": "mom-deeds",
+   "minMoving": 9,
+   "maxTextCov": 5.55,
+   "ok": true
+  },
+  {
+   "s": 24.15,
+   "e": 27.09,
+   "type": "mom-title",
+   "minMoving": 8,
+   "maxTextCov": 10.03,
+   "ok": true
+  },
+  {
+   "s": 27.09,
+   "e": 30.7,
+   "type": "chapter-card",
+   "minMoving": 7,
+   "maxTextCov": 8.82,
+   "ok": true
+  },
+  {
+   "s": 30.35,
+   "e": 33.04,
+   "type": "ni-mud",
+   "minMoving": 8,
+   "maxTextCov": 8.2,
+   "ok": true
+  },
+  {
+   "s": 33.04,
+   "e": 36.02,
+   "type": "whip-mud",
+   "minMoving": 7,
+   "maxTextCov": 3.45,
+   "ok": true
+  },
+  {
+   "s": 36.02,
+   "e": 39.86,
+   "type": "fairytale",
+   "minMoving": 8,
+   "maxTextCov": 9.41,
+   "ok": true
+  },
+  {
+   "s": 39.86,
+   "e": 43.03,
+   "type": "matriarchy",
+   "minMoving": 11,
+   "maxTextCov": 12.35,
+   "ok": true
+  }
+ ],
+ "issues": [],
+ "textCov": {
+  "max": 17.65,
+  "mean": 7,
+  "over30": 0
+ },
+ "moving": {
+  "min": 6,
+  "mean": 9.7,
+  "under5": 0
+ },
+ "motionPoints": {
+  "windows": 22,
+  "withNew": 22,
+  "emptyAt": []
+ }
+}

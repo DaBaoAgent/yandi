@@ -1,0 +1,41 @@
+# ===== 依赖与缓存 =====
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+.cache/
+*.log
+*.pid
+*.err
+
+# ===== 第三方运行时（体积大，见独立仓库 DaBaoAgent/gpt-sovits）=====
+vendor/
+
+# ===== 逐帧渲染中间产物（约 5.7 GB / 38645 张 JPG）=====
+frames/
+frames_full/
+frames_nuwa/
+frames_yandi_full/
+frames_yandi_sample/
+capture_frames/
+
+# ===== 媒体产物：成片 / 草稿 / 混音均不入库 =====
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.flac
+*.m4a
+
+# ===== 临时与探测输出 =====
+tmp/
+*.tmp
+probe/*.png
+
+# ===== 本地密钥 =====
+.env
+.env.*
+*.key
+*.pem

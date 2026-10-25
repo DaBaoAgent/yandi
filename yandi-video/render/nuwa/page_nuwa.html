@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#000;}</style></head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script src="nuwa_sb.js"></script>
+<script>
+// ================= 女娲样片渲染页（密度规则版）=================
+// 规则：文字面积≤30% ｜ 每2秒新动效点 ｜ 同屏≥5运动元素
+const W=1920,H=1080;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const SB=window.SB;
+const COL={bg:'#0E1518',bgA:'#162125',gold:'#E8B84B',goldD:'#9A7524',jade:'#4E9E8A',jadeD:'#173B34',cream:'#F3EAD3',red:'#D9534F',redD:'#8E2F2C',earth:'#8A5A3B',earthD:'#4A2E1D',white:'#FFFFFF',grey:'#7A8288',ink:'#0A0F11'};
+
+// ---------- 资产 ----------
+const AB='D:/@kaifa/yandi/output/006_女娲/';
+const ASSETS={
+ 'nuwa-front':AB+'nuwa_front.png','nuwa-side':AB+'nuwa_side.png','nuwa-back':AB+'nuwa_back.png',
+ 'mom':AB+'女娲故事常用素材_透明PNG_v1/人物/部落母亲.png',
+ 'mama':AB+'女娲故事常用素材_透明PNG_v1/人物/妈妈.png',
+ 'god':AB+'女娲故事常用素材_透明PNG_v1/人物/上帝.png',
+ 'prom':AB+'女娲故事常用素材_透明PNG_v1/人物/普罗米修斯.png',
+ 'fuxi':AB+'女娲故事常用素材_透明PNG_v1/人物/伏羲.png',
+ 'mudman':AB+'女娲故事常用素材_透明PNG_v1/道具/黄土小泥人.png',
+ 'bowl':AB+'女娲故事常用素材_透明PNG_v1/道具/和泥陶碗.png',
+ 'rope':AB+'女娲故事常用素材_透明PNG_v1/道具/蘸泥绳.png',
+ 'stones':AB+'女娲故事常用素材_透明PNG_v1/道具/五色石.png',
+};
+const IMGS={};let loaded=0;const need=Object.keys(ASSETS).length;
+function fileUrl(p){return 'file:///'+p.split('/').map(encodeURIComponent).join('/');}
+for(const k in ASSETS){const im=new Image();im.onload=()=>{loaded++;};im.onerror=()=>{loaded++;};im.src=fileUrl(ASSETS[k]);IMGS[k]=im;}
+function img(k){return (IMGS[k]&&IMGS[k].complete&&IMGS[k].naturalWidth)?IMGS[k]:null;}
+function sprite(k,x,y,h,o){o=o||{};const im=img(k);if(!im)return;ctx.save();
+  ctx.globalAlpha=o.alpha==null?1:o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);
+  if(o.flip)ctx.scale(-1,1);const s=o.scale||1;ctx.scale(s,s);
+  ctx.imageSmoothingEnabled=false;ctx.drawImage(im,-h/2,-h/2,h,h);ctx.restore();}
+
+// ---------- QC 仪表 ----------
+const QC={moving:new Set(),acts:[],textRects:[]};
+function mv(id){QC.moving.add(id);}
+function act(id){QC.acts.push(id);}
+function tRect(x,y,w,h){QC.textRects.push([x,y,w,h]);}
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+function eob(t){const c=1.70158;const x=t-1;return 1+(c+1)*x*x*x+c*x*x}
+function eoe(t){return t>=1?1:1-Math.pow(2,-10*t)}
+function eio(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function rnd(seed){const x=Math.sin(seed*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+let perf=0;
+
+// ---------- 背景四层 ----------
+let theme={r:232,g:184,b:75,a:0.10}; // 当前主题色（A暖金→B土褐）
+function bgBase(){
+  ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H*0.42,80,W/2,H*0.42,W*0.85);
+  g.addColorStop(0,'rgba(22,33,37,1)');g.addColorStop(1,'rgba(14,21,24,1)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function bgParticles(t){ // 层2：持续微动氛围
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  for(let i=0;i<44;i++){const px=(rnd(i)*W+t*(14+rnd(i+7)*26))%W;const py=(rnd(i+3)*H+t*(8+rnd(i+11)*18))%H;
+    const s=1+rnd(i+5)*2.4;ctx.fillRect(px,py,s,s);}
+  mv('bg-particles');
+}
+function bgTheme(t){ // 层3：分段主题氛围
+  const pulse=0.75+0.25*Math.sin(t*0.8);
+  ctx.fillStyle='rgba('+theme.r+','+theme.g+','+theme.b+','+(theme.a*pulse).toFixed(3)+')';
+  ctx.fillRect(0,0,W,H);
+  mv('bg-theme');
+}
+function bgStage(t,stage){ // 层4：动态场景舞台（视差山脊 + 地面）
+  const sp=stage==='b'?1:0.55;
+  for(let L=0;L<2;L++){
+    const amp=40+L*26,yb=H*(L===0?0.78:0.88),spd=(L===0?9:22)*sp;
+    ctx.fillStyle=L===0?'rgba(23,59,52,0.55)':'rgba(12,20,23,0.9)';
+    ctx.beginPath();ctx.moveTo(0,H);
+    for(let x=0;x<=W;x+=24){const y=yb+Math.sin((x+t*spd)*0.0016+L*2.1)*amp+Math.sin((x+t*spd*0.6)*0.004+L)*amp*0.35;ctx.lineTo(x,y);}
+    ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  }
+  if(stage==='b'){ // 泥土地面（上移避让底部字幕条）
+    ctx.fillStyle='rgba(74,46,29,0.5)';ctx.fillRect(0,H-160,W,160);
+    ctx.fillStyle='rgba(138,90,59,0.35)';
+    for(let i=0;i<26;i++){const px=(rnd(i)*W+t*10)%W;ctx.fillRect(px,H-150+rnd(i+3)*40,26,5);}
+  }
+  mv('bg-stage');
+}
+
+// ---------- 文字 ----------
+function bigText(text,x,y,size,color,outline,rot,scale,align){
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);if(scale)ctx.scale(scale,scale);
+  ctx.font='900 '+size+'px "Microsoft YaHei"';ctx.textAlign=align||'center';ctx.textBaseline='middle';
+  const tw=ctx.measureText(text).width;
+  const ax=align==='left'?0:(align==='right'?-tw/2:0);
+  if(outline){ctx.lineWidth=size*0.12;ctx.strokeStyle=outline;ctx.lineJoin='round';ctx.strokeText(text,ax,0);}
+  ctx.fillStyle=color;ctx.fillText(text,ax,0);ctx.restore();
+  tRect(x-(align==='left'?0:tw/2)-size*0.1,y-size*0.62,tw+size*0.2,size*1.24);
+}
+// ---------- 字幕（炎帝样式：底部条 + 关键词高亮）----------
+const ACC_KEYS=['女娲','伏羲','共工','母系社会','人文之母','补天','造人','婚姻','笙簧','神话','童话','中国','上帝','普罗米修斯','泥人','母'];
+function subBar(text){
+  ctx.save();
+  ctx.font='900 64px "Microsoft YaHei"';
+  const tw=ctx.measureText(text).width;
+  const bx=W/2-tw/2-38,by=H-156,bw=tw+76,bh=100;
+  ctx.fillStyle='rgba(0,0,0,0.62)';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle=COL.gold;ctx.fillRect(bx,by,7,bh);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=9;ctx.strokeStyle='#000';
+  const acc=ACC_KEYS.find(k=>text.includes(k));
+  let x=W/2-tw/2;
+  for(const chr of text){
+    const w=ctx.measureText(chr).width;
+    const inAcc=acc&&acc.includes(chr);
+    ctx.strokeText(chr,x+w/2,by+bh/2+3);
+    ctx.fillStyle=inAcc?COL.gold:'#fff';
+    ctx.fillText(chr,x+w/2,by+bh/2+3);
+    x+=w;
+  }
+  ctx.restore();
+  tRect(bx,by,bw,bh);
+}
+function card(x,y,w,h,o){o=o||{};ctx.save();
+  if(o.alpha!=null)ctx.globalAlpha=o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);const s=o.scale||1;ctx.scale(s,s);
+  ctx.fillStyle=o.fill||'rgba(255,255,255,0.055)';ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.fill();
+  if(o.stroke){ctx.strokeStyle=o.stroke;ctx.lineWidth=o.lw||3;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.stroke();}
+  ctx.restore();}
+function chip(x,y,text,color,t0,t,size){const p=eob(clamp((t-t0)/0.35,0,1));if(p<=0)return;
+  ctx.save();ctx.font='900 '+(size||52)+'px "Microsoft YaHei"';const tw=ctx.measureText(text).width;
+  card(x,y,tw+56,size+34,{stroke:color,lw:3,scale:p,fill:'rgba(255,255,255,0.07)'});
+  bigText(text,x,y,size||52,color,null,0,p);mv('chip-'+text+t0);ctx.restore();}
+
+// ---------- 剪影小画 ----------
+function silGod(x,y,s,t,ph){ // 上帝：白袍+光环
+  ctx.save();ctx.translate(x,y+Math.sin(t*1.4+ph)*8);ctx.scale(s,s);
+  ctx.fillStyle='rgba(243,234,211,0.92)';ctx.beginPath();ctx.arc(0,-96,13,0,7);ctx.fill();
+  ctx.strokeStyle=COL.gold;ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,-96,26,9,0,0,7);ctx.stroke();
+  ctx.fillStyle='rgba(243,234,211,0.85)';ctx.beginPath();ctx.moveTo(0,-84);ctx.quadraticCurveTo(52,-40,44,86);ctx.lineTo(-44,86);ctx.quadraticCurveTo(-52,-40,0,-84);ctx.fill();
+  ctx.restore();mv('sil-god'+ph);}
+function silProm(x,y,s,t,ph){ // 普罗米修斯：火炬
+  ctx.save();ctx.translate(x,y+Math.sin(t*1.6+ph)*9);ctx.scale(s,s);
+  ctx.strokeStyle='#8A5A3B';ctx.lineWidth=13;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,90);ctx.lineTo(6,-18);ctx.stroke();
+  const f=0.9+0.12*Math.sin(t*9+ph);
+  ctx.fillStyle=COL.red;ctx.beginPath();ctx.moveTo(0,-104*f);ctx.quadraticCurveTo(38,-40,28,6);ctx.quadraticCurveTo(14,34,0,34);ctx.quadraticCurveTo(-14,34,-28,6);ctx.quadraticCurveTo(-38,-40,0,-104*f);ctx.fill();
+  ctx.fillStyle=COL.gold;ctx.beginPath();ctx.moveTo(0,-58*f);ctx.quadraticCurveTo(20,-24,14,10);ctx.quadraticCurveTo(7,26,0,26);ctx.quadraticCurveTo(-7,26,-14,10);ctx.quadraticCurveTo(-20,-24,0,-58*f);ctx.fill();
+  ctx.restore();mv('sil-prom'+ph);}
+function emblem(x,y,t){ // 回纹玉璧 emblem（非地图）
+  ctx.save();ctx.translate(x,y);const r=110+Math.sin(t*1.3)*5;
+  ctx.rotate(t*0.15);
+  ctx.strokeStyle=COL.jade;ctx.lineWidth=10;ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.stroke();
+  ctx.strokeStyle=COL.gold;ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,r*0.68,0,7);ctx.stroke();
+  ctx.strokeStyle=COL.jade;ctx.lineWidth=6;
+  for(let i=0;i<6;i++){ctx.beginPath();ctx.arc(0,0,r*0.84,i*1.05+t*0.4,i*1.05+0.5+t*0.4);ctx.stroke();}
+  ctx.restore();mv('emblem');}
+function tailTrail(x,y,h,t){ // 女娲蛇尾流光
+  ctx.save();ctx.strokeStyle='rgba(78,158,138,0.5)';ctx.lineWidth=7;ctx.lineCap='round';ctx.setLineDash([16,12]);ctx.lineDashOffset=-t*40;
+  ctx.beginPath();for(let k=0;k<=20;k++){const p=k/20;const sx=x+h*0.1+Math.sin(t*2.2+p*5)*16;const sy=y-h*0.1+p*h*0.9;if(k===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);}
+  ctx.stroke();ctx.restore();mv('tail-trail');}
+function fairyBook(x,y,t){ // 童话书（加大）
+  ctx.save();ctx.translate(x,y);const open=clamp((t-36.4)/0.6,0,1);
+  ctx.fillStyle=COL.cream;ctx.beginPath();ctx.roundRect(-160,-110,320,220,12);ctx.fill();
+  ctx.strokeStyle=COL.redD;ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(0,-110);ctx.lineTo(0,110);ctx.stroke();
+  ctx.fillStyle='rgba(217,83,79,0.85)';
+  const pw=130*open;
+  ctx.beginPath();ctx.moveTo(-5,-98);ctx.quadraticCurveTo(-5-pw,-106,-5-pw,-74);ctx.lineTo(-5-pw,74);ctx.quadraticCurveTo(-5-pw,106,-5,98);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(5,-98);ctx.quadraticCurveTo(5+pw,-106,5+pw,-74);ctx.lineTo(5+pw,74);ctx.quadraticCurveTo(5+pw,106,5,98);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.gold;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(-90,-48+i*44,6+Math.sin(t*3+i)*1.8,0,7);ctx.fill();ctx.beginPath();ctx.arc(90,-48+i*44,6+Math.sin(t*3+i+1)*1.8,0,7);ctx.fill();}
+  ctx.restore();mv('fairy-book');}
+
+// ---------- 转场（温和）----------
+function dip(t,cut){const dt=t-cut;if(dt>=0&&dt<0.3){const a=Math.sin(Math.PI*dt/0.3);ctx.fillStyle=COL.bg;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function veil(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const a=Math.sin(Math.PI*dt/0.32)*0.30;ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softFlash(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.2){const a=Math.sin(Math.PI*dt/0.2)*0.28;ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softWipe(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const p=eio(dt/0.32);ctx.fillStyle=color;ctx.globalAlpha=0.5;ctx.fillRect(-140+p*(W+280),0,140,H);ctx.globalAlpha=1;}}
+function softIris(t,cut){const dt=t-cut;if(dt>=0&&dt<0.36){const p=eoe(dt/0.36);const r=Math.max(1,1150*p);
+  ctx.fillStyle=COL.bg;ctx.beginPath();ctx.rect(0,0,W,H);ctx.arc(W/2,H/2,r,0,7);ctx.fill('evenodd');}}
+const TRANS_KINDS=['dip','veil','softFlash','softWipe','softIris'];
+const TRANS={};let kidx=0;
+for(const sc of SB.scenes){if(sc.s<=0)continue;
+  if(sc.type==='chapter-card')TRANS[sc.s.toFixed(3)]=['softIris',null];
+  else if(sc.type==='ni-mud')TRANS[sc.s.toFixed(3)]=['softIris',null];
+  else{const r=TRANS_KINDS[kidx%TRANS_KINDS.length];TRANS[sc.s.toFixed(3)]=[r,COL.gold];kidx++;}}
+
+// ---------- 场景 ----------
+function sceneByT(t){for(const s of SB.scenes){if(t>=s.s&&t<s.e)return s;}return SB.scenes[SB.scenes.length-1];}
+function subAt(t){for(const s of SB.subs){if(t>=s[0]&&t<s[1])return s[2];}return '';}
+
+// 第一幕：问号置顶 + 三人横排三卡（手机可读：标签64px、角色300px高）
+function scHook(sc,t,tl){
+  const wob=Math.sin(t*3)*0.05;
+  bigText('?',960,205,220,COL.red,COL.gold,wob,1);
+  mv('qmark');
+  const defs=[['上帝','god'],['普罗米修斯','prom'],['女娲','nuwa-front']];
+  const xs=[520,960,1400];
+  for(let i=0;i<3;i++){
+    const p=eob(clamp((tl-0.1-i*0.22)/0.45,0,1));
+    if(p<=0)continue;
+    const isNuwa=i===2;
+    const bob=Math.sin(t*1.5+i*2.1)*8;
+    card(xs[i],560,380,400,{stroke:isNuwa?COL.jade:COL.gold,scale:p,fill:isNuwa?'rgba(78,158,138,0.14)':'rgba(255,255,255,0.06)'});
+    sprite(defs[i][1],xs[i],550+bob,300,{alpha:0.98});
+    bigText(defs[i][0],xs[i],812,64,isNuwa?COL.jade:COL.cream,null,0,1);
+    if(isNuwa){ctx.save();ctx.translate(xs[i]+140,400);ctx.scale(p,p);ctx.fillStyle=COL.redD;ctx.beginPath();ctx.arc(0,0,40,0,7);ctx.fill();ctx.restore();
+      bigText('?',xs[i]+140,400,52,COL.cream,null,0,p);mv('nuwa-badge');}
+    mv('hook-card'+i);
+  }
+  mv('hook-cards');
+}
+function scWestA(sc,t,tl){
+  card(560,470,480,480,{stroke:COL.gold,rot:-0.02});card(1360,470,480,480,{stroke:COL.jade,rot:0.02});
+  sprite('god',560,440,330,{alpha:0.98});bigText('上帝',560,690,76,COL.cream,null,0,1);
+  sprite('nuwa-front',1360,470,360,{alpha:0.95});bigText('女娲',1360,690,76,COL.jade,null,0,1);
+  const vs=1+0.06*Math.sin(t*4);ctx.save();ctx.translate(960,430);ctx.rotate(Math.sin(t*1.2)*0.08);ctx.scale(vs,vs);
+  ctx.fillStyle=COL.redD;ctx.beginPath();ctx.roundRect(-100,-62,200,124,20);ctx.fill();ctx.restore();
+  bigText('VS',960,430,90,COL.white,null,Math.sin(t*1.2)*0.08,vs);mv('vs');
+  const p=clamp((tl-1.0)/0.3,0,1);
+  if(p>0){bigText('男的',960,730,100,COL.grey,null,0,p);ctx.save();ctx.translate(960,730);ctx.strokeStyle=COL.red;ctx.lineWidth=14;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-130,-32);ctx.lineTo(-130+260*clamp((tl-1.3)/0.3,0,1),32);ctx.stroke();ctx.restore();mv('crossout');}
+}
+function scWestB(sc,t,tl){
+  const c1=eob(clamp(tl/0.45,0,1)),c2=eob(clamp((tl-0.5)/0.45,0,1));
+  card(560,440,480,460,{stroke:COL.gold,scale:c1,rot:-0.015});
+  sprite('god',560,410,340,{alpha:0.98});bigText('上帝造人',560,660,68,COL.cream,null,0,c1);
+  card(1360,440,480,460,{stroke:COL.jade,scale:c2,rot:0.015});
+  sprite('prom',1360,410,340,{alpha:0.98});bigText('普罗米修斯',1360,660,62,COL.cream,null,0,c2);
+  const b1=eob(clamp((tl-1.3)/0.35,0,1)),b2=eob(clamp((tl-2.6)/0.35,0,1));
+  if(b1>0){ctx.save();ctx.translate(770,260);ctx.scale(b1,b1);ctx.fillStyle=COL.redD;ctx.beginPath();ctx.arc(0,0,58,0,7);ctx.fill();
+    ctx.strokeStyle=COL.cream;ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,47,0,7);ctx.stroke();ctx.restore();
+    bigText('男',770,260,62,COL.cream,null,0,b1);mv('badge1');}
+  if(b2>0){ctx.save();ctx.translate(1570,260);ctx.scale(b2,b2);ctx.fillStyle=COL.redD;ctx.beginPath();ctx.arc(0,0,58,0,7);ctx.fill();
+    ctx.strokeStyle=COL.cream;ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,47,0,7);ctx.stroke();ctx.restore();
+    bigText('男',1570,260,62,COL.cream,null,0,b2);mv('badge2');}
+  mv('westb-cards');
+}
+function scChinaNuwa(sc,t,tl){
+  // 女娲居中，玉璧与"只有中国"居左
+  emblem(400,300,t);
+  bigText('只有中国',400,500,68,COL.gold,null,0,1);
+  const ry=clamp(tl/0.9,0,1),yy=H-120-(H-120-500)*eob(ry);
+  sprite('nuwa-front',960,yy,460,{alpha:clamp(tl*1.5,0,1)});
+  mv('china-nuwa');
+  const ap=clamp((tl-1.1)/0.4,0,1);
+  if(ap>0){ctx.save();ctx.strokeStyle=COL.gold;ctx.lineWidth=5;ctx.setLineDash([10,8]);ctx.lineDashOffset=-t*30;
+    ctx.beginPath();ctx.moveTo(540,300);ctx.quadraticCurveTo(700,260,790,430);ctx.stroke();ctx.restore();
+    bigText('造人的',960,860,62,COL.cream,null,0,ap);mv('arrow');}
+}
+function scReveal(sc,t,tl){
+  // 女娲居中，名字卡置顶，三件事卡横排收底
+  tailTrail(960,500,420,t);
+  sprite('nuwa-front',960,520,450,{alpha:1});
+  mv('nuwa-reveal');
+  const p2=eob(clamp((tl-0.25)/0.4,0,1));
+  card(960,200,540,190,{stroke:COL.gold,scale:p2,fill:'rgba(232,184,75,0.12)'});
+  bigText('女娲',960,200,130,COL.gold,COL.bg,0,p2);mv('namecard');
+  const items=['造人','补天','收拾'],xs=[560,960,1360];
+  for(let i=0;i<3;i++){const pp=eob(clamp((tl-0.8-i*0.5)/0.4,0,1));if(pp<=0)continue;
+    card(xs[i],800,340,130,{stroke:COL.jade,scale:pp});bigText(items[i],xs[i],800,66,COL.white,null,0,pp);
+    mv('card3-'+i);}
+}
+function scThreeCards(sc,t,tl){
+  // 女娲居中，三卡横排
+  const items=['造人','补天','收拾'],xs=[560,960,1360];
+  for(let i=0;i<3;i++){const w=Math.sin(t*1.6+i*1.4)*0.03;
+    card(xs[i],800,340,130,{stroke:COL.jade,rot:w,fill:'rgba(78,158,138,'+(0.07+0.05*Math.sin(t*2+i)).toFixed(3)+')'});
+    bigText(items[i],xs[i],800,66,COL.white,null,w,1);mv('card3w-'+i);}
+  const qp=eob(clamp((tl-0.5)/0.4,0,1));
+  if(qp>0){bigText('?',330,280,160,COL.red,COL.gold,Math.sin(t*6)*0.05,qp);mv('qmark2');}
+  sprite('nuwa-front',960,520,450,{alpha:0.95});
+}
+function scMomAnalogy(sc,t,tl){
+  // 妈妈+孩子居中
+  sprite('mama',960,520,470,{alpha:1});
+  mv('mama');
+  for(let i=0;i<5;i++){const ph=t*0.9+i*1.3,hy=820-((ph*70)%480),hx=(i%2?1:-1)*(300+((i*97)%260))+960+Math.sin(ph*2.2+i)*22;
+    const ha=clamp(1-(820-hy)/480,0.1,0.85);
+    ctx.save();ctx.globalAlpha=ha;ctx.translate(hx,hy);ctx.scale(0.8,0.8);
+    ctx.fillStyle=COL.red;ctx.beginPath();
+    ctx.moveTo(0,14);ctx.bezierCurveTo(-20,-6,-16,-26,0,-16);ctx.bezierCurveTo(16,-26,20,-6,0,14);ctx.fill();ctx.restore();mv('heart'+i);}
+  ctx.save();ctx.globalAlpha=0.05;bigText('妈',960,540,420,COL.white,null,0,1);ctx.restore();
+  mv('mom-bgtext');
+}
+function scMomDeeds(sc,t,tl){
+  // 部落母亲置顶居中，三卡横排
+  sprite('mom',960,200,230,{alpha:0.95});
+  mv('mom2');
+  const verbs=['顶天','做饭','收拾'],xs=[560,960,1360];
+  for(let i=0;i<3;i++){
+    const pp=eob(clamp((tl-[0.2,1.55,2.9][i])/0.4,0,1));if(pp<=0)continue;
+    card(xs[i],560,340,380,{stroke:COL.gold,scale:pp});
+    bigText(verbs[i],xs[i],460,78,COL.gold,null,0,pp);
+    mv('deed'+i);}
+  // 卡内小动效
+  const st=clamp((tl-0.5)/0.4,0,1);
+  if(st>0){ctx.save();ctx.strokeStyle=COL.cream;ctx.lineWidth=11;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(440,620);ctx.lineTo(680,620);ctx.stroke();ctx.restore();
+    ctx.save();ctx.translate(560,620);ctx.rotate(Math.sin(t*8)*0.03);ctx.fillStyle=COL.cream;ctx.beginPath();ctx.arc(0,0,30,0,7);ctx.fill();ctx.restore();mv('skybar');}
+  const bk=clamp((tl-1.85)/0.4,0,1);
+  if(bk>0){ctx.save();ctx.translate(960,610);
+    ctx.fillStyle='#8A5A3B';ctx.beginPath();ctx.arc(0,0,64,0,7);ctx.fill();
+    ctx.fillStyle=COL.earth;ctx.beginPath();ctx.arc(0,0,44,0,7);ctx.fill();
+    for(let i=0;i<3;i++){const sy=690-((t*40+i*30)%90);ctx.fillStyle='rgba(255,255,255,'+(0.5-i*0.12)+')';ctx.beginPath();ctx.arc(960+Math.sin(t*2+i)*16,sy,8,0,7);ctx.fill();}
+    ctx.restore();mv('bowl-steam');}
+  const sp=clamp((tl-3.2)/0.3,0,1);
+  if(sp>0){for(let i=0;i<5;i++){const a=t*3+i*1.3,r=30+i*10;
+    ctx.fillStyle='rgba(232,184,75,'+(0.8-0.1*i)+')';
+    ctx.beginPath();ctx.arc(1460+Math.cos(a)*r,620+Math.sin(a)*r*0.6,5,0,7);ctx.fill();}mv('sparkle');}
+}
+function scMomTitle(sc,t,tl){
+  const p=eob(clamp(tl/0.45,0,1));
+  bigText('人文之母',960,420,150,COL.gold,COL.bg,0,p);mv('big-mom');
+  const uw=clamp((tl-0.4)/0.5,0,1)*760;
+  ctx.fillStyle=COL.red;ctx.fillRect(960-uw/2,560,uw,12);mv('underline');
+  sprite('nuwa-front',700,760,300,{alpha:0.95});
+  sprite('mom',1220,760,300,{alpha:0.95,flip:true});
+  mv('duo');
+}
+function scChapter(sc,t,tl){
+  const p=eoe(clamp(tl/0.5,0,1));
+  card(960,470,900,380,{stroke:COL.gold,scale:p,fill:'rgba(232,184,75,0.10)'});
+  bigText(sc.tag,960,360,64,COL.gold,null,0,p);
+  bigText(sc.title,960,480,110,COL.white,null,0,p);
+  mv('chapter-card');
+  fairyBook(1480,790,t);
+  const cp=clamp((tl-0.9)/0.3,0,1);
+  if(cp>0){ctx.save();ctx.translate(1480,790);ctx.strokeStyle=COL.red;ctx.lineWidth=12;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-90,-70);ctx.lineTo(-90+180*cp,70);ctx.stroke();ctx.restore();mv('book-cross');}
+  bigText('不是童话',1480,872,52,COL.red,null,0,cp);
+}
+function scNiMud(sc,t,tl){
+  // 女娲居中劳作，陶碗居右，小泥人落地
+  const speed=tl>1.5?2.6:1.4;
+  sprite('nuwa-side',960,560,470,{rot:Math.sin(t*speed)*0.02});
+  mv('nuwa-work');
+  sprite('bowl',1300,620,240,{alpha:0.98});
+  mv('bowl');
+  // 小泥人逐个捏出
+  const pops=[[0.55,1150],[1.75,1440]];
+  for(let i=0;i<2;i++){const pp=eob(clamp((tl-pops[i][0])/0.4,0,1));if(pp<=0)continue;
+    const land=Math.abs(Math.sin((tl-pops[i][0])*6))*10*(1-clamp((tl-pops[i][0]-0.4)/0.3,0,1));
+    sprite('mudman',pops[i][1],850-land,170,{scale:pp});mv('mudman'+i);}
+  // 太慢了节拍：速度线+汗珠
+  if(tl>1.5){for(let i=0;i<4;i++){const lx=520+i*46;ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(lx,640+Math.sin(t*10+i)*20);ctx.lineTo(lx-36,640+Math.sin(t*10+i)*20);ctx.stroke();}
+    ctx.fillStyle='#8ecae6';ctx.beginPath();ctx.arc(1080,420+Math.sin(t*4)*14,10,0,7);ctx.fill();mv('speedlines');}
+  mv('earth-amb');
+}
+function scWhipMud(sc,t,tl){
+  // 绳子甩动
+  const sw=clamp((tl-0.15)/0.5,0,1);
+  ctx.save();ctx.translate(300,600);ctx.rotate(-0.5+sw*1.6);
+  sprite('rope',260,0,340,{rot:0.3});ctx.restore();
+  mv('rope');
+  // 泥点飞溅落地成小泥人
+  const n=10;
+  for(let i=0;i<n;i++){
+    const st=0.55+i*0.075,pp=clamp((tl-st)/0.9,0,1);
+    if(pp<=0)continue;
+    const ex=760+(i%5)*180,ey=860-((i%2)*40);
+    if(pp<0.75){const k=pp/0.75;
+      const mx=300+(ex-300)*k,my=600-260*Math.sin(k*Math.PI)-k*k*120;
+      ctx.fillStyle=COL.earth;ctx.beginPath();ctx.arc(mx,my,11,0,7);ctx.fill();mv('drop'+i);}
+    else{const lp=eob(clamp((pp-0.75)/0.25,0,1));
+      sprite('mudman',ex,ey,130,{scale:0.5+0.5*lp,alpha:0.95});mv('land'+i);}
+  }
+  mv('whip-group');
+}
+function scFairytale(sc,t,tl){
+  // 女娲背影居左观察，童话书左中，问号与金票靠中
+  fairyBook(640,560,t);
+  const qp=eob(clamp((tl-1.2)/0.4,0,1));
+  if(qp>0){bigText('?',1120,440,240,COL.red,COL.gold,Math.sin(t*5)*0.06,qp);mv('q-big');}
+  const tp=clamp((tl-2.1)/0.5,0,1);
+  if(tp>0){card(1120,740,580,160,{stroke:COL.gold,scale:eob(tp),fill:'rgba(232,184,75,0.12)'});
+    bigText('重要信息',1120,740,68,COL.gold,null,0,tp);mv('ticket');}
+  sprite('nuwa-back',250,580,380,{alpha:0.9});
+  mv('nuwa-back');
+}
+function scMatriarchy(sc,t,tl){
+  const p=eob(clamp((tl-1.9)/0.5,0,1));
+  if(p>0){
+    const ring=1+0.5*(1-clamp((tl-1.9)/0.5,0,1));
+    ctx.save();ctx.globalAlpha=clamp(1-(tl-1.9)/0.5,0,1)*0.8;ctx.strokeStyle=COL.gold;ctx.lineWidth=10;
+    ctx.beginPath();ctx.arc(960,520,200*ring,0,7);ctx.stroke();ctx.restore();mv('ring');
+    bigText('母系社会',960,520,160,COL.gold,COL.bg,0,p);mv('big-matri');}
+  const ips=[0,1,2],ix=[680,960,1240];
+  for(let i=0;i<3;i++){const pp=eob(clamp((tl-2.6-i*0.25)/0.35,0,1));if(pp<=0)continue;
+    sprite(i===0?'mom':'mudman',ix[i],830,160,{scale:pp,alpha:0.95});mv('tribe'+i);}
+  sprite('nuwa-front',960,180,240,{alpha:0.9});
+  mv('nuwa-final');
+}
+
+// ---------- 主渲染 ----------
+function render(t){
+  perf=t;
+  QC.moving.clear();QC.acts=[];QC.textRects=[];
+  ctx.setTransform(1,0,0,1,0,0);
+  const sc=sceneByT(t);const tl=t-sc.s;
+  // 主题色随段落渐变（A暖金→B土褐，30.35接点前开始过渡）
+  const k=clamp((t-29.6)/1.0,0,1);
+  theme.r=232+(138-232)*k;theme.g=184+(90-184)*k;theme.b=75+(59-75)*k;theme.a=0.10+0.05*k;
+  bgBase();bgParticles(t);bgTheme(t);
+  bgStage(t,t>30.3?'b':'a');
+  try{
+    ctx.save();
+    const name=sc.type;
+    if(name==='hook')scHook(sc,t,tl);
+    else if(name==='west-gods-a')scWestA(sc,t,tl);
+    else if(name==='west-gods-b')scWestB(sc,t,tl);
+    else if(name==='china-nuwa')scChinaNuwa(sc,t,tl);
+    else if(name==='reveal')scReveal(sc,t,tl);
+    else if(name==='three-cards')scThreeCards(sc,t,tl);
+    else if(name==='mom-analogy')scMomAnalogy(sc,t,tl);
+    else if(name==='mom-deeds')scMomDeeds(sc,t,tl);
+    else if(name==='mom-title')scMomTitle(sc,t,tl);
+    else if(name==='chapter-card')scChapter(sc,t,tl);
+    else if(name==='ni-mud')scNiMud(sc,t,tl);
+    else if(name==='whip-mud')scWhipMud(sc,t,tl);
+    else if(name==='fairytale')scFairytale(sc,t,tl);
+    else if(name==='matriarchy')scMatriarchy(sc,t,tl);
+    ctx.restore();
+  }catch(e){window.__err=(window.__err||[]);if(window.__err.length<20)window.__err.push(t.toFixed(2)+': '+String(e));ctx.restore();}
+  // 转场
+  for(const kk in TRANS){const c=+kk;const dt=t-c;if(dt<0||dt>0.4)continue;
+    const ty=TRANS[kk][0],col=TRANS[kk][1];
+    if(ty==='dip')dip(t,c);else if(ty==='veil')veil(t,c,col);else if(ty==='softFlash')softFlash(t,c,col);
+    else if(ty==='softWipe')softWipe(t,c,col);else if(ty==='softIris')softIris(t,c);}
+  // 字幕（炎帝样式底部条）
+  const sub=subAt(t);
+  if(sub)subBar(sub);
+  // 水印+进度
+  ctx.save();ctx.font='500 32px "Microsoft YaHei"';ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('@徐艾伦',W-44,34);ctx.restore();
+  const pr=clamp(t/SB.total,0,1);
+  ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(0,H-6,W,6);
+  ctx.fillStyle=COL.gold;ctx.fillRect(0,H-6,W*pr,6);mv('progress');
+  // 淡出
+  if(t>SB.total-0.5){ctx.fillStyle='#000';ctx.globalAlpha=(t-(SB.total-0.5))/0.5;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+  QC.moving.add('watermark');QC.acts.push('scene:'+sc.type);
+  if(sc.s>0)QC.acts.push('cut:'+sc.type);
+}
+window.__ready=function(){return loaded>=need;};
+window.renderFrame=function(i){render(i/30);return {t:i/30,moving:[...QC.moving],acts:QC.acts,textRects:QC.textRects};};
+render(0);
+</script></body></html>

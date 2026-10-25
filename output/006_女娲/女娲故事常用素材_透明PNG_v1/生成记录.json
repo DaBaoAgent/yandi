@@ -1,0 +1,145 @@
+{
+  "生成工具": "内置 imagegen",
+  "生成日期": "2026-10-25",
+  "依据": "source/口播稿.md",
+  "风格参照": "D:\\@kaifa\\donghua\\女娲_Codex前期制作包\\assets\\characters\\nuwa_turnaround_v1\\nuwa_front.png",
+  "用户要求": "按照口播文案生成常用人物/道具，PNG透明背景，统一中文命名",
+  "素材": [
+    {
+      "编号": "fuxi",
+      "名称": "伏羲",
+      "分类": "人物",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-b44d05e5-80f4-4e2c-984e-3bbf2602e9dc.png",
+      "文件": "人物/伏羲.png",
+      "提示词": "Use case: stylized-concept. Asset: 伏羲 for a Chinese Nuwa myth animation. Reference image 1 defines the shared character proportions, muted palette and chunky PIXEL ART style; use it as a STYLE reference, not as a subject to duplicate. Subject: Full-body FRONT view of Fuxi, male Chinese mythological tribal leader, companion to the reference Nuwa. Cute round face, simple small black eyes, navy-black hair in a topknot, short dark beard, modest antique gold and jade headband, ochre ivory traditional robe with dark teal belt. Human head and torso merging into ONE continuous brown-gold coiled serpent tail, NO human legs or feet. Neutral relaxed arms, empty hands. About 2.5 heads tall. Keep clear family resemblance in costume language to Nuwa without copying her female face or crown. Composition: exactly one complete isolated asset, centered with 12% padding, no cropping, square canvas. Medium: old 16-bit console chibi sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Use short chibi proportions for humans, simple black eyes, sparse two or three-tone shading and the reference's navy, jade, ivory, ochre and peach palette. Do not increase detail or make elegant tall figures. Background: actual transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text or watermark, no cast shadow, no gradient glow, no smooth 3D or vector rendering. One independent image only, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "gonggong",
+      "名称": "共工",
+      "分类": "人物",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-04522e53-0b7c-489a-8585-8ccc3898ed87.png",
+      "文件": "人物/共工.png",
+      "提示词": "Use case: stylized-concept. Asset: 共工 for a Chinese Nuwa myth animation. Reference image 1 defines the shared character proportions, muted palette and chunky PIXEL ART style; use it as a STYLE reference, not as a subject to duplicate. Subject: Full-body front three-quarter view of Gonggong, water deity from the Chinese myth. A compact strong chibi male, red unruly long hair, stern eyebrows, dark teal simple archaic tunic and belt, forearm bracers, blue-green serpent lower body coiled underneath, no feet. Strong readable silhouette, slightly bent elbows and clenched fists, ready to ram a mountain. No surrounding water, no mountain, no weapon. Keep child-friendly rather than grotesque. Composition: exactly one complete isolated asset, centered with 12% padding, no cropping, square canvas. Medium: old 16-bit console chibi sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Use short chibi proportions for humans, simple black eyes, sparse two or three-tone shading and the reference's navy, jade, ivory, ochre and peach palette. Do not increase detail or make elegant tall figures. Background: actual transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text or watermark, no cast shadow, no gradient glow, no smooth 3D or vector rendering. One independent image only, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "tribal_woman",
+      "名称": "部落母亲",
+      "分类": "人物",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-8b73eee5-5f52-4601-8cd9-c8b7fa2af750.png",
+      "文件": "人物/部落母亲.png",
+      "提示词": "Use case: stylized-concept. Asset: 部落母亲 for a Chinese Nuwa myth animation. Reference image 1 defines the shared character proportions, muted palette and chunky PIXEL ART style; use it as a STYLE reference, not as a subject to duplicate. Subject: One full-body FRONT view of a kind prehistoric Chinese tribal woman, chibi adult proportion like reference, round face and simple black dot eyes, dark hair tied into a low bun, modest rough ochre wrap tunic to knees, cream sash, simple brown sandals. TWO normal human legs and feet. Arms relaxed, empty hands, no baby in arms, no crown, no jewelry. Friendly neutral expression, reusable village character. Composition: exactly one complete isolated asset, centered with 12% padding, no cropping, square canvas. Medium: old 16-bit console chibi sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Use short chibi proportions for humans, simple black eyes, sparse two or three-tone shading and the reference's navy, jade, ivory, ochre and peach palette. Do not increase detail or make elegant tall figures. Background: actual transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text or watermark, no cast shadow, no gradient glow, no smooth 3D or vector rendering. One independent image only, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "tribal_man",
+      "名称": "部落男子",
+      "分类": "人物",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-939bb57b-aa2d-4ec2-a38b-186ed9e6e05e.png",
+      "文件": "人物/部落男子.png",
+      "提示词": "Use case: stylized-concept. Asset: 部落男子 for a Chinese Nuwa myth animation. Reference image 1 defines the shared character proportions, muted palette and chunky PIXEL ART style; use it as a STYLE reference, not as a subject to duplicate. Subject: One full-body FRONT view of a prehistoric Chinese tribal man, chibi adult proportion like reference, round face and simple black dot eyes, dark hair tied in a topknot, modest simple dark olive rough cloth tunic to knees, cream waist sash, simple brown sandals. TWO normal human legs and feet. Arms relaxed, empty hands, no weapon, no crown, no jewelry. Friendly neutral expression, reusable village character. Composition: exactly one complete isolated asset, centered with 12% padding, no cropping, square canvas. Medium: old 16-bit console chibi sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Use short chibi proportions for humans, simple black eyes, sparse two or three-tone shading and the reference's navy, jade, ivory, ochre and peach palette. Do not increase detail or make elegant tall figures. Background: actual transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text or watermark, no cast shadow, no gradient glow, no smooth 3D or vector rendering. One independent image only, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "tribal_child",
+      "名称": "部落儿童",
+      "分类": "人物",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-e185ac81-8fd5-4f09-a904-3a1d11244ca5.png",
+      "文件": "人物/部落儿童.png",
+      "提示词": "Use case: stylized-concept. Asset: 部落儿童 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One full-body FRONT view of a cute prehistoric Chinese child, round face with simple black dot eyes, two short tied hair tufts, simple muted cream and terracotta knee-length tunic, bare lower calves, small brown sandals, TWO normal human legs and feet. Arms relaxed and hands empty. A child distinct from adult characters, head roughly half total height, friendly neutral expression. No toy, no jewelry, no other person. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "divine_tortoise",
+      "名称": "撑天神龟",
+      "分类": "动物",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-0ad0b6c4-d66c-4784-9bba-b7393d6e03c7.png",
+      "文件": "动物/撑天神龟.png",
+      "提示词": "Use case: stylized-concept. Asset: 撑天神龟 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One ancient mythical giant tortoise, isolated complete animal in a readable three-quarter side view facing left. Cute sturdy pixel creature, dark jade green head and FOUR clearly attached thick feet, large moss-green and ochre domed shell, short tail, small black eyes. Natural tortoise anatomy, not humanoid. Intact uninjured animal, no blood, no severed limbs, no sky, no platform, no extra objects. Sprite only; giant scale will be established later in animation. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "clay_person",
+      "名称": "黄土小泥人",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-1c64c709-8dcf-460d-a513-fe29a70848a0.png",
+      "文件": "道具/黄土小泥人.png",
+      "提示词": "Use case: stylized-concept. Asset: 黄土小泥人 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One small handmade yellow-earth clay human figurine, FRONT view, simple round featureless chibi head with two tiny indentations for eyes, short thick arms spread slightly, short legs joined to torso; entirely earthy ochre clay, no clothes or hair. Small thumb impressions suggested by 1-2 pixel clusters only, primitive handmade appearance. No stand or ground, no potter hands, no duplicate figurines. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "mud_bowl",
+      "名称": "和泥陶碗",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-9dd6304d-4054-409a-9cb3-0baa5c340f7a.png",
+      "文件": "道具/和泥陶碗.png",
+      "提示词": "Use case: stylized-concept. Asset: 和泥陶碗 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One shallow primitive earthenware bowl filled with thick yellow-brown wet clay, three-quarter top view, chunky rough terracotta rim, visible ochre clay mound and a few large surface folds. No people, hands, tools, clay doll, ground, or separate loose objects. Isolated bowl with its contents, readable simple silhouette. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "mud_rope",
+      "名称": "蘸泥绳",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-983064f1-2591-4f17-aa60-6ebd61d10270.png",
+      "文件": "道具/蘸泥绳.png",
+      "提示词": "Use case: stylized-concept. Asset: 蘸泥绳 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One thick rough plant-fiber rope for Nuwa creating humans, arranged as an open loose S curve, one end darker and coated with ochre wet mud, other end clean and frayed. No hands, no knots forming symbols, no people, no clay droplets disconnected outside the sprite. Clearly reads as an ancient rope rather than a snake. No modern materials. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "five_color_stones",
+      "名称": "五色石",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-fb5272cc-64d7-47dc-ac96-ab623e0e9523.png",
+      "文件": "道具/五色石.png",
+      "提示词": "Use case: stylized-concept. Asset: 五色石 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: Exactly FIVE irregular sacred stones in a compact loose cluster, five distinct muted colors: cinnabar red, antique golden yellow, jade green, ivory white, dark indigo. Each stone has chunky angular square-pixel silhouette and 2-3 flat shades, no realistic facets or sparkles, no glow halo. A single reusable prop set, stones separated by small transparent gaps. No bowl, no pedestal, no symbols or text. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "stone_furnace",
+      "名称": "炼石炉",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-14f41d02-9a0f-438a-9f00-4434356ebb08.png",
+      "文件": "道具/炼石炉.png",
+      "提示词": "Use case: stylized-concept. Asset: 炼石炉 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One primitive ancient stone smelting furnace for Nuwa melting sacred stones: squat round ochre-gray stacked stone body, wide open top with a few orange-red glowing stones visible inside, one small low arched fire opening showing compact orange ember pixels, sturdy simple base integrated into furnace. Three-quarter front view. No surrounding ground, no huge flame or smoke, no people, no modern pipes or machinery. Complete isolated object. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "reeds",
+      "名称": "芦苇",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-7c8bcf2f-d141-493e-b87c-927e439859a0.png",
+      "文件": "道具/芦苇.png",
+      "提示词": "Use case: stylized-concept. Asset: 芦苇 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One compact upright tied bundle of TRUE COMMON REED (Phragmites) stalks, muted dry pale green and straw yellow stems, narrow pointed leaves, with three large loose fluffy FEATHERY TAN PLUMES at the top, drawn as sparse angular pixel fronds. Reed flowers are airy branching feather-shaped panicles; absolutely NO cylindrical brown cattail spikes, NO sausage-shaped seed heads. Full stalks and cut ends visible, straw tie near bottom. No vase, ground, water, hands, crown, ornaments or extra objects. It must read as harvested reeds with feathery plumes. Coarse low-detail old game item sprite. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "reed_ash",
+      "名称": "芦苇灰",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-7cae9e81-6429-4378-b086-7c1a61393f52.png",
+      "文件": "道具/芦苇灰.png",
+      "提示词": "Use case: stylized-concept. Asset: 芦苇灰 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One small isolated mound of burnt reed ash, broad low irregular triangular silhouette, muted cool gray and charcoal pixel clusters with a few short blackened reed stalk fragments embedded in mound. No fire, smoke, bowl, ground tile, hands, labels or background. Pixel game inventory material sprite. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "stone_mill",
+      "名称": "合婚石磨",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-5e26575c-b3bc-418e-aa27-d1d079aeb3d7.png",
+      "文件": "道具/合婚石磨.png",
+      "提示词": "Use case: stylized-concept. Asset: 合婚石磨 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One ancient round stone mill disc, slightly thick gray stone wheel lying at a three-quarter angle so the circular top and thickness are visible. Simple central square hole, sparse radial chisel grooves, a tiny wooden handle near rim. One disc only, no other mill or mountain or base, no floating symbols. Coarse readable stone pixel clusters. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "gourd_sheng",
+      "名称": "葫芦笙",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-8bc4342a-b026-4822-a326-79c2976887de.png",
+      "文件": "道具/葫芦笙.png",
+      "提示词": "Use case: stylized-concept. Asset: 葫芦笙 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One ancient gourd sheng musical instrument, a warm ochre small rounded gourd wind chamber with a short curved blowing mouthpiece, seven upright bamboo pipes of staggered lengths inserted together into its top, muted pale green bamboo with a few simple dark joints. Complete isolated instrument in a three-quarter front view. No hands, ribbons, stand, musical notes, text or modern metal parts. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "wooden_boat",
+      "名称": "治水小舟",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-e752eee2-bf88-4cbf-a4c2-57f568362765.png",
+      "文件": "道具/治水小舟.png",
+      "提示词": "Use case: stylized-concept. Asset: 治水小舟 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One small primitive wooden canoe, empty and complete, readable three-quarter side view with bow facing left. Simple low brown wooden hull, visible empty cream-brown interior, two crosswise plank seats, no oars, sails, mast, passengers, water, wake, shore or shadow. Cute old-console pixel game prop with simple two-tone wood. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    },
+    {
+      "编号": "campfire",
+      "名称": "部落篝火",
+      "分类": "道具",
+      "源文件": "C:\\Users\\20200\\.codex\\generated_images\\01a16e7c-6ba0-7fe0-b387-dc6f491fff3a\\exec-6a50b6fe-1e6d-4bca-9e01-4d244b8b913c.png",
+      "文件": "道具/部落篝火.png",
+      "提示词": "Use case: stylized-concept. Asset: 部落篝火 for a Chinese Nuwa myth animation. Image 1 defines the shared chibi proportions, muted palette and chunky pixel-art STYLE, not the subject to duplicate. Subject: One small campfire prop: three short dark brown logs crossed at base, compact bright ochre-orange-red flame above, silhouette distinct readable square-pixel flame tongues. All parts in a single compact asset. No circular stone ground base, no floor, no smoke haze, no sparks scattered far out, no people or cast light on a background. 3 flat flame color bands, no translucent glow. Composition: exactly one complete isolated asset, centered with at least 12% padding, no cropping, square canvas. Medium: old 16-bit console game sprite, visibly COARSE square pixels, roughly 64x96 logical-pixel character or 64x64 prop enlarged with nearest-neighbor hard edges. Short chibi proportions, simple black eyes, sparse 2-3 flat shades, reference navy/jade/ivory/ochre/peach palette. Real transparent PNG alpha outside subject and through gaps. No white background, no painted checkerboard, no scene, no text/watermark, no cast shadow or gradient glow, no smooth 3D or vector painting, no high-detail realistic texture. One independent image, no sprite sheet or multiple views."
+    }
+  ]
+}

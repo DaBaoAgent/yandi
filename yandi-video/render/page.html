@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#000;}</style></head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script>
+const W=1920,H=1080;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const COL={bg:'#15151F',red:'#E24B4A',redD:'#A32D2D',amber:'#EF9F27',white:'#FFFFFF',grey:'#888780',cream:'#F3EAD3',teal:'#0F6E56',dark:'#04342C',green:'#639922'};
+const SUBS=[
+[0.12,3.06,'你今天中午吃的米饭白菜萝卜猪肉'],
+[3.06,4.11,'你每天喝的茶'],
+[4.11,5.19,'你生病吃的中药'],
+[5.19,7.21,'这些东西最早是谁发现的'],
+[7.21,10.13,'不是什么神农架的野人也不是什么修仙的道士'],
+[10.22,12.38,'是一个距今七千多年的部落首领'],
+[12.38,13.22,'他叫炎帝'],
+[13.22,14.14,'也叫神农氏'],
+[14.14,16.16,'你可能听过神农尝百草的故事'],
+[16.16,17.24,'说他为了找药'],
+[17.24,19.00,'一天之内遇到七十二种毒'],
+[19.00,20.01,'全靠茶解毒'],
+[20.01,21.27,'听着像神话是吧'],
+[21.37,22.73,'但我今天要跟你讲的是'],
+[22.73,23.65,'这个神农氏'],
+[23.65,24.33,'他干的事'],
+[24.33,25.61,'比你想象的要大得多'],
+[25.61,26.81,'他不光尝百草'],
+[26.81,28.44,'他还教会了中国人种地'],
+[28.44,29.52,'他还发明了医药'],
+[29.52,30.0,'他还搞了最早的市场'],
+];
+const CUTS=[3.06,5.19,7.21,10.13,14.14,16.16,20.01,21.37,25.61];
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+function eob(t){const c=1.70158;const x=t-1;return 1+(c+1)*x*x*x+c*x*x*x}
+function eoe(t){return t>=1?1:1-Math.pow(2,-10*t)}
+function eio(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function rnd(seed){const x=Math.sin(seed*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+
+function bg(t){
+  ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,0.025)';
+  for(let i=0;i<40;i++){const px=(rnd(i)*W+t*20*(0.4+rnd(i+7)))%W;const py=(rnd(i+3)*H+t*12*(0.3+rnd(i+11)))%H;ctx.fillRect(px,py,3,3);}
+}
+function subBar(text){
+  ctx.save();
+  ctx.font='900 64px "Microsoft YaHei"';
+  const tw=ctx.measureText(text).width;
+  const bx=W/2-tw/2-38,by=H-156,bw=tw+76,bh=100;
+  ctx.fillStyle='rgba(0,0,0,0.62)';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle=COL.amber;ctx.fillRect(bx,by,7,bh);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=9;ctx.strokeStyle='#000';ctx.fillStyle='#fff';
+  ctx.strokeText(text,W/2,by+bh/2+3);ctx.fillText(text,W/2,by+bh/2+3);
+  ctx.restore();
+}
+function watermark(){
+  ctx.save();ctx.font='500 34px "Microsoft YaHei"';ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('@徐艾伦',W-46,36);ctx.restore();
+}
+function flash(t,cut,color){
+  const dt=t-cut;if(dt>=0&&dt<0.16){ctx.fillStyle=color||COL.white;ctx.globalAlpha=0.85*(1-dt/0.16);ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+}
+function shake(t,cut,amp){
+  const dt=t-cut;if(dt>=0&&dt<0.4){const k=(1-dt/0.4);ctx.translate((rnd(Math.floor(t*60))*2-1)*amp*k,(rnd(Math.floor(t*60)+9)*2-1)*amp*k);}
+}
+// ===== 温和转场库（低刺激：暗场轻切/色纱/细光带/柔光）=====
+function dip(t,cut){const dt=t-cut;if(dt>=0&&dt<0.3){const a=Math.sin(Math.PI*dt/0.3);
+  ctx.fillStyle=COL.bg;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function veil(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const a=Math.sin(Math.PI*dt/0.32)*0.30;
+  ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softFlash(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.2){const a=Math.sin(Math.PI*dt/0.2)*0.28;
+  ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softWipe(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const p=eio(dt/0.32);
+  ctx.fillStyle=color;ctx.globalAlpha=0.5;ctx.fillRect(-140+p*(W+280),0,140,H);ctx.globalAlpha=1;}}
+function softIris(t,cut){const dt=t-cut;if(dt>=0&&dt<0.36){const p=eoe(dt/0.36);const r=Math.max(1,1150*p);
+  ctx.fillStyle=COL.bg;ctx.beginPath();ctx.rect(0,0,W,H);ctx.arc(W/2,H/2,r,0,7);ctx.fill('evenodd');}}
+const TRANS={
+ 3.06:['softWipe',COL.red],
+ 5.19:['push',COL.red],
+ 7.21:['dip',null],
+ 10.13:['softWipe',COL.amber],
+ 14.14:['softIris',null],
+ 16.16:['veil',COL.teal],
+ 20.01:['softFlash','#FFFFFF'],
+ 21.37:['push',COL.amber],
+ 25.61:['dip',null],
+};
+function bigText(text,x,y,size,color,outline,rot,scale){
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);if(scale)ctx.scale(scale,scale);
+  ctx.font='900 '+size+'px "Microsoft YaHei"';ctx.textAlign='center';ctx.textBaseline='middle';
+  if(outline){ctx.lineWidth=size*0.12;ctx.strokeStyle=outline;ctx.lineJoin='round';ctx.strokeText(text,0,0);}
+  ctx.fillStyle=color;ctx.fillText(text,0,0);ctx.restore();
+}
+function steam(x,y,t,seed){
+  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=5;ctx.lineCap='round';
+  for(let i=0;i<2;i++){ctx.beginPath();const ph=t*2+i*1.7+seed;
+    for(let k=0;k<=12;k++){const p=k/12;const sx=x+i*26-13+Math.sin(ph+p*4)*10;const sy=y-p*70;
+      if(k===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);}ctx.stroke();}
+}
+function iconRice(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#F5C4B3';ctx.beginPath();ctx.ellipse(0,-30,85,26,0,0,7);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,-38,70,18,0,0,7);ctx.fill();
+  ctx.fillStyle='#FAEEDA';ctx.beginPath();ctx.moveTo(-85,-28);ctx.quadraticCurveTo(-78,52,0,56);ctx.quadraticCurveTo(78,52,85,-28);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.red;ctx.fillRect(-85,-8,170,16);steam(0,-58,perf,0);ctx.restore();}
+function iconCabbage(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#97C459';ctx.beginPath();ctx.ellipse(0,0,80,100,0,0,7);ctx.fill();
+  ctx.fillStyle='#C0DD97';ctx.beginPath();ctx.ellipse(-28,-8,48,78,-0.3,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(30,-6,46,76,0.25,0,7);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,-30,26,44,0,0,7);ctx.fill();ctx.restore();}
+function iconRadish(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#F09595';ctx.beginPath();ctx.moveTo(0,110);ctx.quadraticCurveTo(-70,20,-52,-40);ctx.quadraticCurveTo(-30,-84,0,-84);ctx.quadraticCurveTo(30,-84,52,-40);ctx.quadraticCurveTo(70,20,0,110);ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(-20,-52);ctx.lineTo(14,-36);ctx.stroke();
+  ctx.strokeStyle='#3B6D11';ctx.lineWidth=10;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(0,-84);ctx.lineTo(0,-130);ctx.moveTo(0,-96);ctx.lineTo(-34,-122);ctx.moveTo(0,-96);ctx.lineTo(34,-122);ctx.stroke();ctx.restore();}
+function iconPork(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#F5C4B3';ctx.beginPath();ctx.roundRect(-90,-60,180,120,30);ctx.fill();
+  ctx.fillStyle='#D85A30';ctx.beginPath();ctx.roundRect(-90,-60,180,34,30);ctx.fill();
+  ctx.fillStyle='#fff';ctx.fillRect(-90,-22,180,20);ctx.fillStyle='#712B13';ctx.beginPath();ctx.ellipse(52,44,10,7,0,0,7);ctx.fill();ctx.restore();}
+function iconTea(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle=COL.teal;ctx.beginPath();ctx.moveTo(-70,-50);ctx.lineTo(70,-50);ctx.lineTo(52,70);ctx.lineTo(-52,70);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.dark;ctx.beginPath();ctx.ellipse(0,-50,70,20,0,0,7);ctx.fill();
+  ctx.strokeStyle=COL.teal;ctx.lineWidth=16;ctx.beginPath();ctx.arc(92,-14,30,-1.4,1.4);ctx.stroke();
+  steam(0,-84,perf,2);ctx.restore();}
+function iconMed(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#444441';ctx.beginPath();ctx.moveTo(-90,-30);ctx.quadraticCurveTo(-70,80,0,84);ctx.quadraticCurveTo(70,80,90,-30);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#2C2C2A';ctx.beginPath();ctx.ellipse(0,-30,90,24,0,0,7);ctx.fill();
+  ctx.fillStyle=COL.amber;for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(-60+i*30,-42+((i%2)*8),12,7,0.4*(i-2),0,7);ctx.fill();}
+  ctx.strokeStyle=COL.red;ctx.lineWidth=8;ctx.beginPath();ctx.arc(0,-58,26,0.3,2.8);ctx.stroke();ctx.restore();}
+function iconQ(x,y,s,t){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.font='900 260px "Microsoft YaHei"';ctx.textAlign='center';ctx.textBaseline='middle';
+  const wob=Math.sin(t*10)*0.05;ctx.rotate(wob);
+  ctx.lineWidth=30;ctx.strokeStyle=COL.amber;ctx.strokeText('?',0,0);ctx.fillStyle=COL.red;ctx.fillText('?',0,0);ctx.restore();}
+function iconSilhouette(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle=COL.dark;
+  ctx.beginPath();ctx.arc(0,-150,62,0,7);ctx.fill();
+  ctx.beginPath();ctx.moveTo(-95,-80);ctx.quadraticCurveTo(0,-125,95,-80);ctx.lineTo(80,180);ctx.lineTo(-80,180);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.amber;ctx.beginPath();ctx.arc(0,-150,62,-0.9,0.9);ctx.lineTo(0,-150);ctx.fill();
+  ctx.strokeStyle=COL.dark;ctx.lineWidth=14;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-70,-40);ctx.lineTo(-130,90);ctx.moveTo(70,-40);ctx.lineTo(130,90);ctx.stroke();ctx.restore();}
+function stamp(x,y,s,text,rot){ctx.save();ctx.translate(x,y);ctx.rotate(rot||0);ctx.scale(s,s);
+  ctx.fillStyle=COL.redD;ctx.beginPath();ctx.roundRect(-110,-110,220,220,22);ctx.fill();
+  ctx.strokeStyle=COL.cream;ctx.lineWidth=8;ctx.beginPath();ctx.roundRect(-92,-92,184,184,14);ctx.stroke();
+  ctx.font='900 130px "Microsoft YaHei"';ctx.fillStyle=COL.cream;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,0,6);ctx.restore();}
+function iconSprout(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#8B5A2B';ctx.beginPath();ctx.ellipse(0,60,50,20,0,0,7);ctx.fill();
+  ctx.strokeStyle='#3B6D11';ctx.lineWidth=14;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,50);ctx.quadraticCurveTo(4,-10,0,-60);ctx.stroke();
+  ctx.fillStyle='#639922';ctx.beginPath();ctx.ellipse(-38,-62,42,20,-0.6,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(38,-62,42,20,0.6,0,7);ctx.fill();ctx.restore();}
+function iconNeedle(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.strokeStyle='#B4B2A9';ctx.lineWidth=10;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(0,90);ctx.lineTo(0,-70);ctx.stroke();
+  ctx.fillStyle=COL.amber;ctx.beginPath();ctx.moveTo(-16,-70);ctx.lineTo(16,-70);ctx.lineTo(0,-120);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,-140,30,0,7);ctx.stroke();ctx.restore();}
+function iconCoin(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle=COL.amber;ctx.beginPath();ctx.arc(0,0,72,0,7);ctx.fill();
+  ctx.fillStyle=COL.bg;ctx.fillRect(-16,-52,32,104);ctx.fillRect(-52,-16,104,32);ctx.restore();}
+function iconMarket(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle=COL.red;ctx.beginPath();ctx.moveTo(-110,-20);ctx.lineTo(0,-95);ctx.lineTo(110,-20);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.amber;ctx.fillRect(-96,-20,192,14);
+  ctx.fillStyle='#5F5E5A';ctx.fillRect(-88,-6,44,86);ctx.fillStyle='#378ADD';ctx.fillRect(-24,-6,48,86);ctx.fillStyle='#639922';ctx.fillRect(44,-6,44,86);ctx.restore();}
+function crossOut(x,y,s,delay,t){const p=clamp((t-delay)/0.3,0,1);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.strokeStyle=COL.red;ctx.lineWidth=16;ctx.lineCap='round';ctx.globalAlpha=0.95;
+  const L=110*p;ctx.beginPath();ctx.moveTo(-L,-L);ctx.lineTo(L*p*0-(-L)+L*p*2*0+(-L+2*L*p),-L+2*L*p);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-L,-L);ctx.lineTo(-L+2*L*p,-L+2*L*p);ctx.stroke();
+  if(p>0.6){const q=(p-0.6)/0.4;ctx.beginPath();ctx.moveTo(L,-L);ctx.lineTo(L-2*L*q,-L+2*L*q);ctx.stroke();}
+  ctx.restore();}
+let perf=0;
+function drawScene(name,t){
+  if(name==='food-burst'){
+    const labels=['米饭','白菜','萝卜','猪肉'];const icons=[iconRice,iconCabbage,iconRadish,iconPork];
+    for(let i=0;i<4;i++){const dl=i*0.32;const p=eob(clamp((t-dl)/0.5,0,1));
+      const x=330+i*420,y=430+Math.sin(perf*2+i)*14;
+      ctx.save();ctx.globalAlpha=clamp((t-dl)*4,0,1);ctx.translate(x,y);ctx.scale(p,p);
+      ctx.fillStyle=i%2?'rgba(226,75,74,0.18)':'rgba(239,159,39,0.15)';ctx.beginPath();ctx.arc(0,0,150,0,7);ctx.fill();
+      icons[i](0,0,0.9);ctx.restore();
+      bigText(labels[i],x,650,64,i%2?COL.red:COL.amber,COL.bg,0,p);}
+    bigText('你今天中午吃的',960,180,110,COL.white,null,0,1);
+  }
+  else if(name==='tea-medicine'){
+    const p1=eob(clamp(t/0.5,0,1)),p2=eob(clamp((t-1.24)/0.5,0,1));
+    ctx.save();ctx.translate(620,470);ctx.scale(p1,p1);iconTea(0,0,1.5);ctx.restore();
+    bigText('茶',620,760,90,COL.teal,COL.bg,0,p1);
+    ctx.save();ctx.translate(1300,470);ctx.scale(p2,p2);iconMed(0,0,1.5);ctx.restore();
+    bigText('中药',1300,760,90,COL.amber,COL.bg,0,p2);
+    bigText('也是他发现的？',960,180,84,COL.white,null,0,1);
+  }
+  else if(name==='question'){
+    const p=eoe(clamp(t/0.35,0,1));
+    iconQ(960,460,0.6+p*0.8,t);
+    bigText('这些东西',960,150,90,COL.white,null,0,1);
+    bigText('最早是谁发现的？',960,820,96,COL.amber,COL.bg,0,p);
+  }
+  else if(name==='not-wildman'){
+    bigText('神农架的野人？',560,420,84,COL.grey,null,-0.06,1);
+    crossOut(560,420,1.3,0.35,t);
+    bigText('修仙的道士？',1360,420,84,COL.grey,null,0.05,1);
+    crossOut(1360,420,1.3,0.95,t);
+    bigText('都不是——',960,720,100,COL.red,COL.white,0,eob(clamp((t-1.7)/0.4,0,1)));
+  }
+  else if(name==='yandi-reveal'){
+    const p1=eoe(clamp(t/0.7,0,1));
+    ctx.save();ctx.globalAlpha=p1;ctx.translate(560,560+40*(1-p1));iconSilhouette(0,0,1.35);ctx.restore();
+    const p2=eob(clamp((t-3.1)/0.45,0,1));
+    stamp(1240,380,0.4+p2*0.9,'炎',-0.08);
+    bigText('炎帝',1560,330,150,COL.white,COL.redD,0,p2);
+    bigText('= 神农氏',1560,520,80,COL.amber,null,0,p2);
+    bigText('距今 7000+ 年',1560,680,56,COL.grey,null,0,p2);
+    bigText('部落首领',560,880,72,COL.white,null,0,p1);
+  }
+  else if(name==='story-card'){
+    const p=eoe(clamp(t/0.4,0,1));
+    ctx.save();ctx.translate(960,480);ctx.scale(0.6+p*0.4,p);
+    ctx.fillStyle='rgba(226,75,74,0.14)';ctx.beginPath();ctx.roundRect(-640,-260,1280,520,40);ctx.fill();
+    ctx.strokeStyle=COL.red;ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(-640,-260,1280,520,40);ctx.stroke();
+    bigText('神农尝百草',0,-90,120,COL.white,null,-0.02,1);
+    bigText('为了找药 · 亲口试毒',0,80,64,COL.amber,null,0,1);
+    ctx.restore();
+    bigText('你可能听过这个故事',960,140,64,COL.grey,null,0,1);
+  }
+  else if(name==='poison-counter'){
+    const p=clamp(t/1.8,0,1);const n=Math.floor(eoe(p)*72);
+    ctx.save();ctx.translate(960,440);
+    const scl=1+0.05*Math.sin(t*14)*(1-p*0.7);ctx.scale(scl,scl);
+    bigText(String(n),0,0,300,n>=72?COL.red:COL.white,n>=72?COL.white:null,0,1);
+    ctx.restore();
+    bigText('一天遇到 72 种毒',960,760,88,COL.amber,COL.bg,0,1);
+    bigText('全靠 茶 解毒',960,866,60,COL.teal,COL.bg,0,clamp((t-2.84)/0.4,0,1));
+    for(let i=0;i<7;i++){const px=180+i*270,pp=eob(clamp((t-0.15*i-0.2)/0.4,0,1));
+      ctx.save();ctx.globalAlpha=pp;ctx.translate(px,140);ctx.scale(pp,pp);
+      ctx.fillStyle=i%2?COL.teal:COL.green;ctx.beginPath();ctx.ellipse(0,0,34,54,i*0.5,0,7);ctx.fill();ctx.restore();}
+  }
+  else if(name==='myth'){
+    const wob=Math.sin(t*9)*0.03;
+    ctx.save();ctx.translate(960,440);ctx.rotate(wob);ctx.scale(1.6,1.6);iconTea(0,0,1);ctx.restore();
+    bigText('听着像神话是吧？',960,780,104,COL.white,COL.redD,wob*0.5,1);
+  }
+  else if(name==='bigger'){
+    const p=eoe(clamp(t/0.45,0,1));
+    const scl=0.5+p*0.5+(p>=1?0.02*Math.sin(t*6):0);
+    bigText('他要讲的事',960,340,96,COL.white,null,0,p);
+    ctx.save();ctx.translate(960,580);ctx.scale(scl,scl);
+    bigText('比你想象的',0,0,150,COL.white,null,0,1);
+    bigText('大 得 多',0,190,170,COL.red,COL.white,0,1);
+    ctx.restore();
+  }
+  else if(name==='four-things'){
+    const items=[['尝百草',iconTea],['教种地',iconSprout],['创医药',iconNeedle],['建市场',iconMarket]];
+    const dls=[0,1.20,2.83,3.91];
+    const ys=[400,720];
+    for(let i=0;i<4;i++){const dl=dls[i];const p=eoe(clamp((t-dl)/0.4,0,1));if(p<=0)continue;
+      const fromLeft=i%2===0;
+      const posX=fromLeft? (960-380+ (1-p)*-580) : (960+380+(1-p)*580);
+      const posY=ys[Math.floor(i/2)];
+      ctx.save();ctx.globalAlpha=clamp(p*2,0,1);ctx.translate(posX,posY);
+      ctx.fillStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.roundRect(-280,-95,560,190,28);ctx.fill();
+      ctx.strokeStyle=COL.amber;ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(-280,-95,560,190,28);ctx.stroke();
+      ctx.save();ctx.translate(-190,0);ctx.scale(0.62,0.62);items[i][1](0,0,1);ctx.restore();
+      bigText(items[i][0],110,10,84,COL.white,null,0,1);
+      ctx.restore();}
+    bigText('他不光尝百草，他还……',960,210,64,COL.grey,null,0,1);
+  }
+}
+function render(t){
+  perf=t;
+  ctx.setTransform(1,0,0,1,0,0);
+  let name='food-burst';
+  if(t<3.06)name='food-burst';else if(t<5.19)name='tea-medicine';else if(t<7.21)name='question';
+  else if(t<10.13)name='not-wildman';else if(t<14.14)name='yandi-reveal';else if(t<16.16)name='story-card';
+  else if(t<20.01)name='poison-counter';else if(t<21.37)name='myth';else if(t<25.61)name='bigger';
+  else name='four-things';
+  bg(t);
+  let sc=1;
+  ctx.save();
+  if(name==='question'&&t<5.6)shake(t,5.19,7);
+  if(name==='yandi-reveal'&&t>13.3&&t<13.7)shake(t,13.3,7);
+  if(name==='bigger'&&t<21.8)shake(t,21.37,9);
+  if(name==='four-things'&&t<26.0)shake(t,25.61,6);
+  for(const k of ['5.19','21.37']){const c=+k;const dt=t-c;
+    if(dt>=0&&dt<0.3){const s=1+0.05*(1-eoe(dt/0.3));ctx.translate(W/2,H/2);ctx.scale(s,s);ctx.translate(-W/2,-H/2);}}
+  drawScene(name,t);
+  ctx.restore();
+  for(const k in TRANS){const c=+k;const dt=t-c;if(dt<0||dt>0.4)continue;
+    const ty=TRANS[k][0],col=TRANS[k][1];
+    if(ty==='dip')dip(t,c);
+    else if(ty==='veil')veil(t,c,col);
+    else if(ty==='softFlash')softFlash(t,c,col);
+    else if(ty==='softWipe')softWipe(t,c,col);
+    else if(ty==='softIris')softIris(t,c);
+    else if(ty==='push')softFlash(t,c,col);
+  }
+  let sub='';
+  for(const s of SUBS){if(t>=s[0]&&t<s[1]){sub=s[2];break;}}
+  if(sub)subBar(sub);
+  watermark();
+  if(t>29.5){ctx.fillStyle='#000';ctx.globalAlpha=(t-29.5)/0.5;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+}
+window.renderFrame=function(i){render(i/30);return true;};
+render(0);
+</script></body></html>

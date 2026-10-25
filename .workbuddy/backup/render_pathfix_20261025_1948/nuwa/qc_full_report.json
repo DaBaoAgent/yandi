@@ -1,0 +1,120 @@
+{
+ "total": 427.2,
+ "samples": 855,
+ "scenes": 100,
+ "textCov": {
+  "max": 19.59,
+  "mean": 6.1,
+  "over30": 0
+ },
+ "moving": {
+  "min": 6,
+  "mean": 12.6,
+  "under5": 0
+ },
+ "motionPoints": {
+  "windows": 15,
+  "withNew": 15,
+  "emptyAt": []
+ },
+ "sections": [
+  {
+   "name": "S0 开场钩子",
+   "paradigm": "概念",
+   "scenes": 10,
+   "minMoving": 6,
+   "maxTextCov": 10.33,
+   "ok": true
+  },
+  {
+   "name": "S1 她造了人",
+   "paradigm": "故事+概念",
+   "scenes": 15,
+   "minMoving": 7,
+   "maxTextCov": 15.39,
+   "ok": true
+  },
+  {
+   "name": "S2 她补了天",
+   "paradigm": "故事",
+   "scenes": 15,
+   "minMoving": 7,
+   "maxTextCov": 13.96,
+   "ok": true
+  },
+  {
+   "name": "S3 她定了婚姻",
+   "paradigm": "故事+概念",
+   "scenes": 13,
+   "minMoving": 7,
+   "maxTextCov": 12.19,
+   "ok": true
+  },
+  {
+   "name": "S4 她创造了笙簧",
+   "paradigm": "故事+概念",
+   "scenes": 10,
+   "minMoving": 7,
+   "maxTextCov": 9.41,
+   "ok": true
+  },
+  {
+   "name": "S5 女娲伏羲关系",
+   "paradigm": "概念",
+   "scenes": 11,
+   "minMoving": 8,
+   "maxTextCov": 11.56,
+   "ok": true
+  },
+  {
+   "name": "S6 为什么记得她",
+   "paradigm": "概念",
+   "scenes": 15,
+   "minMoving": 8,
+   "maxTextCov": 10.87,
+   "ok": true
+  },
+  {
+   "name": "S7 跟你有什么关系",
+   "paradigm": "概念+收尾",
+   "scenes": 11,
+   "minMoving": 9,
+   "maxTextCov": 19.59,
+   "ok": true
+  }
+ ],
+ "typeCount": {
+  "hook": 1,
+  "west-a": 1,
+  "west-b": 1,
+  "china-nuwa": 1,
+  "reveal": 1,
+  "three-cards": 1,
+  "mom-analogy": 1,
+  "mom-deeds": 1,
+  "mom-title": 1,
+  "chapter": 4,
+  "promise": 1,
+  "ni-mud": 2,
+  "whip-mud": 1,
+  "fairytale": 1,
+  "matriarchy": 2,
+  "center": 12,
+  "memory": 1,
+  "skeptic": 1,
+  "bigword": 14,
+  "duo": 13,
+  "sil": 12,
+  "translate": 1,
+  "row3": 8,
+  "globe": 2,
+  "timeline": 3,
+  "question": 5,
+  "merge": 1,
+  "snake-reveal": 1,
+  "goddess-row": 1,
+  "lineage": 3,
+  "endflash": 1,
+  "endcard": 1
+ }
+}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const W=1920,H=1080;
+let seed=20261025;
+function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+function rr(a,b){return a+rnd()*(b-a);}
+
+// 粗像素噪点纹理（20px 逻辑像素，nearest-neighbor 放大）
+let _noise=null;
+function noiseCanvas(){
+  if(_noise)return _noise;
+  const n=document.createElement('canvas');n.width=96;n.height=54;
+  const nc=n.getContext('2d');const id=nc.createImageData(96,54);
+  for(let i=0;i<id.data.length;i+=4){const v=rnd()*255;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=11;}
+  nc.putImageData(id,0,0);_noise=n;return n;
+}
+function dither(c){c.save();c.imageSmoothingEnabled=false;c.globalAlpha=0.55;c.drawImage(noiseCanvas(),0,0,W,H);c.restore();}
+function base(c,c1,c2){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,c1);g.addColorStop(1,c2);c.fillStyle=g;c.fillRect(0,0,W,H);}
+function blob(c,x,y,r,col){const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);}
+function stars(c,n,yMax,aMin){for(let i=0;i<n;i++){const x=rr(0,W),y=rr(0,yMax),a=rr(aMin,aMin+0.35),s=rnd()<0.12?2:1;c.fillStyle='rgba(243,234,211,'+a.toFixed(2)+')';c.fillRect(Math.round(x),Math.round(y),s,s);}}
+function motes(c,n,col,yMin,yMax){for(let i=0;i<n;i++){const x=rr(0,W),y=rr(yMin,yMax);c.fillStyle=col.replace('A',rr(0.08,0.26).toFixed(2));c.fillRect(Math.round(x),Math.round(y),2,2);}}
+
+// ============ 8 版背景 ============
+function bg01_starmist(c){ // 概念段通用：星雾深空
+  base(c,'#0E1518','#141D21');
+  blob(c,180,60,560,'rgba(78,158,138,0.10)');
+  blob(c,1760,40,480,'rgba(232,184,75,0.07)');
+  blob(c,960,-60,640,'rgba(111,168,201,0.05)');
+  stars(c,130,H*0.38,0.10);
+  for(let i=0;i<10;i++){c.fillStyle='rgba(232,184,75,'+rr(0.22,0.5).toFixed(2)+')';c.fillRect(Math.round(rr(0,W)),Math.round(rr(0,H*0.3)),1,1);}
+  dither(c);
+}
+function bg02_earth(c){ // 造人段：黄土泥沼
+  base(c,'#12100C','#1D1811');
+  blob(c,280,1040,600,'rgba(138,90,59,0.12)');
+  blob(c,1680,1050,480,'rgba(138,90,59,0.09)');
+  for(let i=0;i<4;i++){
+    const y=H-36-i*48;
+    c.fillStyle='rgba(74,46,29,'+(0.5-i*0.08).toFixed(2)+')';
+    c.beginPath();c.moveTo(0,H);
+    for(let x=0;x<=W;x+=60)c.lineTo(x,y+Math.sin(x*0.004+i*2)*22+rnd()*8);
+    c.lineTo(W,H);c.closePath();c.fill();
+  }
+  c.strokeStyle='rgba(243,234,211,0.10)';c.lineWidth=1.5;
+  for(let k=0;k<10;k++){
+    let x=rnd()<0.5?rr(0,300):W-rr(0,300),y=H-rr(0,180);
+    c.beginPath();c.moveTo(x,y);
+    for(let s=0;s<5;s++){x+=rr(-45,45);y-=rr(10,50);c.lineTo(x,y);}
+    c.stroke();
+  }
+  motes(c,26,'rgba(232,184,75,A)',H-620,H-120);
+  dither(c);
+}
+function bg03_skycrack(c){ // 灾难段：天裂
+  base(c,'#0D1114','#191E22');
+  blob(c,960,-120,760,'rgba(142,47,44,0.10)');
+  for(let i=0;i<7;i++){
+    let x=120+i*265+rr(-40,40),y=0;
+    c.lineWidth=rr(2.5,4.5);
+    c.strokeStyle='rgba(142,47,44,'+rr(0.28,0.48).toFixed(2)+')';
+    c.beginPath();c.moveTo(x,y);
+    let ang=Math.PI/2+rr(-0.3,0.3);
+    const pts=[[x,y]];
+    for(let s=0;s<10;s++){
+      const len=rr(26,64);ang+=rr(-0.25,0.25);
+      x+=Math.cos(ang)*len;y+=Math.sin(ang)*len;
+      if(y>H*0.42)break;
+      c.lineTo(x,y);pts.push([x,y]);
+    }
+    c.stroke();
+    // 主裂纹中段生出一条细支纹
+    if(pts.length>4){
+      const [bx0,by0]=pts[2];
+      c.lineWidth=1.5;c.strokeStyle='rgba(142,47,44,0.30)';
+      c.beginPath();c.moveTo(bx0,by0);
+      let bxx=bx0,byy=by0,bang=ang+rr(-0.8,0.8);
+      for(let s=0;s<4;s++){bxx+=Math.cos(bang)*rr(24,44);byy+=Math.sin(bang)*rr(24,44);if(byy>H*0.36)break;c.lineTo(bxx,byy);}
+      c.stroke();
+    }
+  }
+  motes(c,30,'rgba(243,234,211,A)',0,H*0.5);
+  dither(c);
+}
+function bg04_fivestone(c){ // 修复段：五色补天
+  base(c,'#101619','#1B2429');
+  const cols=['rgba(78,158,138,','rgba(232,184,75,','rgba(243,234,211,','rgba(176,106,59,','rgba(111,168,201,'];
+  for(let b=0;b<5;b++){
+    const y=54+b*56+rr(-14,14);
+    c.strokeStyle=cols[b]+'0.13)';
+    c.lineWidth=rr(26,44);c.lineCap='round';
+    c.beginPath();
+    for(let x=-40;x<=W+40;x+=80){
+      const yy=y+Math.sin(x*0.003+b*1.7)*30+Math.sin(x*0.0011+b)*18;
+      if(x===-40)c.moveTo(x,yy);else c.lineTo(x,yy);
+    }
+    c.stroke();
+  }
+  stars(c,24,H*0.32,0.08);
+  dither(c);
+}
+function bg05_bonfire(c){ // 笙簧段：篝火暖夜
+  base(c,'#120E0A','#1F1810');
+  blob(c,250,1020,660,'rgba(232,184,75,0.13)');
+  blob(c,1740,1040,520,'rgba(217,83,79,0.07)');
+  c.fillStyle='rgba(74,46,29,0.55)';c.fillRect(0,H-56,W,56);
+  motes(c,24,'rgba(232,184,75,A)',H-540,H-40);
+  dither(c);
+}
+function bg06_jademountain(c){ // 山川段：青绿层峦
+  base(c,'#0E1618','#192628');
+  blob(c,1660,140,320,'rgba(243,234,211,0.09)');
+  const layers=[{col:'rgba(23,59,52,0.55)',by:0.66,amp:1.0},{col:'rgba(15,43,38,0.70)',by:0.74,amp:1.5},{col:'rgba(10,31,28,0.85)',by:0.82,amp:1.6}];
+  for(const L of layers){
+    c.fillStyle=L.col;
+    c.beginPath();c.moveTo(0,H);
+    let x=0;const baseY=H*L.by;
+    c.lineTo(0,baseY);
+    while(x<W){
+      x+=rr(120,280);
+      const y=Math.max(H*0.46,baseY-rr(50,230)*L.amp);
+      c.lineTo(Math.min(x,W),y);
+    }
+    c.lineTo(W,H);c.closePath();c.fill();
+    // 雾带
+    c.strokeStyle='rgba(243,234,211,0.06)';c.lineWidth=16;c.lineCap='round';
+    c.beginPath();
+    for(let xx=-40;xx<=W+40;xx+=80){
+      const yy=baseY-rr(30,90);
+      if(xx===-40)c.moveTo(xx,yy);else c.lineTo(xx,yy);
+    }
+    c.stroke();
+  }
+  dither(c);
+}
+function bg07_temple(c){ // 信仰段：金殿香火
+  base(c,'#12100B','#1D1910');
+  blob(c,1560,560,720,'rgba(232,184,75,0.10)');
+  const bx=1590,by=H-210;
+  c.fillStyle='rgba(42,33,24,0.92)';
+  c.fillRect(bx-230,by+140,460,70);
+  let ty=by+140;
+  for(let i=0;i<3;i++){
+    const w=270-i*56,h=92;
+    ty-=h+28;
+    c.fillRect(bx-w/2,ty,w,h);
+    c.beginPath();
+    c.moveTo(bx-w/2-56,ty);c.lineTo(bx,ty-62);c.lineTo(bx+w/2+56,ty);c.lineTo(bx+w/2,ty+16);c.lineTo(bx-w/2,ty+16);
+    c.closePath();c.fill();
+  }
+  c.fillRect(bx-6,ty-104,12,74);
+  for(let i=0;i<6;i++){c.fillStyle='rgba(232,184,75,'+rr(0.22,0.45).toFixed(2)+')';c.beginPath();c.arc(rr(1330,1480),rr(560,900),4,0,7);c.fill();}
+  c.strokeStyle='rgba(243,234,211,0.05)';c.lineWidth=6;c.lineCap='round';
+  for(let s=0;s<3;s++){
+    c.beginPath();
+    for(let y=H-220;y>180;y-=40){
+      const x=1430+s*76+Math.sin(y*0.02+s*2)*42;
+      if(y===H-220)c.moveTo(x,y);else c.lineTo(x,y);
+    }
+    c.stroke();
+  }
+  dither(c);
+}
+function bg08_starend(c){ // 收尾段：归星夜幕
+  base(c,'#0C1014','#151B20');
+  c.save();c.translate(W/2,H/2);c.rotate(-0.35);
+  const g=c.createLinearGradient(0,-170,0,170);
+  g.addColorStop(0,'rgba(243,234,211,0)');g.addColorStop(0.5,'rgba(243,234,211,0.09)');g.addColorStop(1,'rgba(243,234,211,0)');
+  c.fillStyle=g;c.fillRect(-W,-160,W*2,320);
+  c.restore();
+  stars(c,220,H*0.62,0.08);
+  dither(c);
+}
+
+const BG={ 'bg01_starmist':bg01_starmist,'bg02_earth':bg02_earth,'bg03_skycrack':bg03_skycrack,
+  'bg04_fivestone':bg04_fivestone,'bg05_bonfire':bg05_bonfire,'bg06_jademountain':bg06_jademountain,
+  'bg07_temple':bg07_temple,'bg08_starend':bg08_starend };
+
+function drawBG(name){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+  (BG[name]||bg01_starmist)(ctx);
+}
+window.drawBG=drawBG;
+window.BG_NAMES=Object.keys(BG);
+window.__ready=()=>true;
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#000;}</style></head>
+<body>
+<canvas id="c43" width="1440" height="1080"></canvas>
+<canvas id="c34" width="1080" height="1440"></canvas>
+<script>
+function drawCover(cv,landscape){
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
+  const COL={bg:'#15151F',red:'#E24B4A',redD:'#A32D2D',amber:'#EF9F27',white:'#FFFFFF',dark:'#04342C'};
+  ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,0.03)';
+  for(let i=0;i<70;i++){ctx.fillRect((Math.sin(i*127.1)*0.5+0.5)*W,(Math.sin(i*311.7)*0.5+0.5)*H,4,4);}
+  ctx.strokeStyle='rgba(255,255,255,0.22)';ctx.lineWidth=3;
+  ctx.strokeRect(34,34,W-68,H-68);
+  const S=landscape?H/1080:H/1440;
+  function figure(fx,fy,fs){
+    ctx.save();ctx.translate(fx,fy);ctx.scale(fs,fs);
+    ctx.fillStyle=COL.dark;
+    ctx.beginPath();ctx.arc(0,-150,62,0,7);ctx.fill();
+    ctx.beginPath();ctx.moveTo(-95,-80);ctx.quadraticCurveTo(0,-125,95,-80);ctx.lineTo(80,180);ctx.lineTo(-80,180);ctx.closePath();ctx.fill();
+    ctx.fillStyle=COL.amber;ctx.beginPath();ctx.arc(0,-150,62,-0.9,0.9);ctx.lineTo(0,-150);ctx.fill();
+    ctx.restore();
+  }
+  if(landscape){
+    figure(W*0.20,H*0.56,1.35);
+    ctx.fillStyle=COL.red;ctx.fillRect(0,H-26,W,26);
+    ctx.save();ctx.translate(W*0.86,H*0.16);ctx.rotate(-0.08);
+    ctx.fillStyle=COL.redD;ctx.fillRect(-88,-88,176,176);
+    ctx.strokeStyle='#F3EAD3';ctx.lineWidth=7;ctx.strokeRect(-72,-72,144,144);
+    ctx.font='900 126px "Microsoft YaHei"';ctx.fillStyle='#F3EAD3';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('炎',0,6);
+    ctx.restore();
+    const cx=W*0.62,ty=H*0.42;
+    ctx.font='900 340px "Microsoft YaHei"';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineWidth=30;ctx.strokeStyle=COL.redD;ctx.lineJoin='round';
+    ctx.strokeText('炎帝',cx,ty);
+    ctx.fillStyle=COL.white;ctx.fillText('炎帝',cx,ty);
+    ctx.fillStyle=COL.amber;ctx.fillRect(cx-250,ty+225,500,16);
+  }else{
+    figure(W*0.26,H*0.26,1.05);
+    ctx.save();ctx.translate(W*0.84,H*0.115);ctx.rotate(-0.08);
+    ctx.fillStyle=COL.redD;ctx.fillRect(-86,-86,172,172);
+    ctx.strokeStyle='#F3EAD3';ctx.lineWidth=7;ctx.strokeRect(-70,-70,140,140);
+    ctx.font='900 122px "Microsoft YaHei"';ctx.fillStyle='#F3EAD3';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('炎',0,6);
+    ctx.restore();
+    const cx=W*0.5,ty=H*0.55;
+    ctx.font='900 360px "Microsoft YaHei"';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineWidth=32;ctx.strokeStyle=COL.redD;ctx.lineJoin='round';
+    ctx.strokeText('炎帝',cx,ty);
+    ctx.fillStyle=COL.white;ctx.fillText('炎帝',cx,ty);
+    ctx.fillStyle=COL.amber;ctx.fillRect(cx-240,ty+250,480,16);
+    ctx.fillStyle=COL.red;ctx.fillRect(0,H-26,W,26);
+  }
+}
+drawCover(document.getElementById('c43'),true);
+drawCover(document.getElementById('c34'),false);
+window.snap=function(id){return document.getElementById(id).toDataURL('image/png');};
+</script></body></html>
