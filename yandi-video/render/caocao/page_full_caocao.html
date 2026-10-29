@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#000;}</style></head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script src="caocao_full_sb.js"></script>
+<script>
+// ================= 曹操 全片渲染页（三国铁血金红板 + 动漫透明素材 + 剪影动画） =================
+const W=1920,H=1080;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const SB=window.SB;
+const COL={bg:'#0E0A08',bgA:'#1C1108',gold:'#E8B84B',goldD:'#9A7524',red:'#C0392B',redD:'#7B241C',
+ cream:'#F3EAD3',ink:'#070505',jade:'#5E9B8A',grey:'#8A7A6A',white:'#FFFFFF',copper:'#B87333'};
+
+// ---------- 资产（曹操素材_动漫_v1 透明PNG） ----------
+const AB='D:/@kaifa/yandi/output/020_曹操/素材_动漫_v1/';
+const ASSETS={
+ 'caocao':AB+'人物/曹操_动漫_v1_透明.png',
+ 'zou':AB+'人物/邹夫人_动漫_v1_透明.png',
+ 'zhangxiu':AB+'人物/张绣_动漫_v1_透明.png',
+ 'dianwei':AB+'人物/典韦_动漫_v1_透明.png',
+ 'caorang':AB+'人物/曹昂_动漫_v1_透明.png',
+ 'ding':AB+'人物/丁夫人_动漫_v1_透明.png',
+ 'caopi':AB+'人物/曹丕_动漫_v1_透明.png',
+ 'caozhi':AB+'人物/曹植_动漫_v1_透明.png',
+ 'xiandi':AB+'人物/汉献帝_动漫_v1_透明.png',
+ 'caorui':AB+'人物/曹叡_动漫_v1_透明.png',
+ 'caoshuang':AB+'人物/曹爽_动漫_v1_透明.png',
+ 'simayi':AB+'人物/司马懿_动漫_v1_透明.png',
+ 'simashi':AB+'人物/司马师_动漫_v1_透明.png',
+ 'simazhao':AB+'人物/司马昭_动漫_v1_透明.png',
+ 'simayan':AB+'人物/司马炎_动漫_v1_透明.png',
+ 'camp':AB+'道具/宛城营门_动漫_v1_透明.png',
+ 'horse':AB+'道具/曹昂战马_动漫_v1_透明.png',
+ 'arrow':AB+'道具/流箭_动漫_v1_透明.png',
+ 'halberd':AB+'道具/典韦双戟_动漫_v1_透明.png',
+ 'loom':AB+'道具/丁夫人织机_动漫_v1_透明.png',
+ 'edict':AB+'道具/禅让诏书_动漫_v1_透明.png',
+ 'bed':AB+'道具/司马懿病榻_动漫_v1_透明.png',
+ 'tomb':AB+'道具/高平陵陵墓_动漫_v1_透明.png',
+ 'gate':AB+'道具/洛阳城门_动漫_v1_透明.png',
+ 'seal':AB+'道具/魏晋传国玉玺_动漫_v1_透明.png',
+};
+const BGIMG='D:/@kaifa/yandi/output/006_女娲/背景图_v1/bg10_layeredpeaks.png';
+const IMGS={};let loaded=0;const need=Object.keys(ASSETS).length+1;
+function fileUrl(p){return 'file:///'+p.split('/').map(encodeURIComponent).join('/');}
+for(const k in ASSETS){const im=new Image();im.onload=()=>{loaded++;};im.onerror=()=>{loaded++;console.log('MISS',k,ASSETS[k]);};im.src=fileUrl(ASSETS[k]);IMGS[k]=im;}
+const bgIm=new Image();bgIm.onload=()=>{loaded++;};bgIm.onerror=()=>{loaded++;console.log('MISS bg');};bgIm.src=fileUrl(BGIMG);
+function img(k){return (IMGS[k]&&IMGS[k].complete&&IMGS[k].naturalWidth)?IMGS[k]:null;}
+function sprite(k,x,y,h,o){o=o||{};const im=img(k);if(!im)return;
+  const iw=im.naturalWidth, ih=im.naturalHeight;
+  const w=h*iw/ih;
+  ctx.save();
+  ctx.globalAlpha=o.alpha==null?1:o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);
+  if(o.flip)ctx.scale(-1,1);const s=o.scale||1;ctx.scale(s,s);
+  if(o.filter&&ctx.filter!==undefined)ctx.filter=o.filter;
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore();
+  QC.fgRects.push([x-w/2*(o.scale||1),y-h/2*(o.scale||1),w*(o.scale||1),h*(o.scale||1)]);}
+
+// ---------- QC 仪表 ----------
+const QC={moving:new Set(),acts:[],textRects:[],subRect:null,fgRects:[]};
+function mv(id){QC.moving.add(id);}
+function tRect(x,y,w,h){QC.textRects.push([x,y,w,h]);}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function eob(t){if(t<=0)return 0;const c=1.70158;const x=t-1;return 1+(c+1)*x*x*x+c*x*x;}
+function eoe(t){if(t<=0)return 0;return t>=1?1:1-Math.pow(2,-10*t);}
+function eio(t){if(t<=0)return 0;return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+function rnd(seed){const x=Math.sin(seed*127.1+311.7)*43758.5453;return x-Math.floor(x);}
+
+// ---------- 背景四层（bg10 群峰叠嶂 + 运镜 + 动态） ----------
+let theme={r:232,g:184,b:75,a:0.12};
+function camAt(t){
+  const panX=Math.sin(t*Math.PI/26)*42;
+  const panY=Math.sin(t*Math.PI/47+1.2)*14;
+  const zoom=1.09+Math.cos(t*Math.PI/19)*0.03;
+  return {panX,panY,zoom};
+}
+function bgBase(t){
+  if(bgIm.complete&&bgIm.naturalWidth){
+    const ir=bgIm.naturalWidth/bgIm.naturalHeight,rr=W/H;
+    let sw,sh,sx,sy;
+    if(ir>rr){sh=bgIm.naturalHeight;sw=sh*rr;sx=(bgIm.naturalWidth-sw)/2;sy=0;}
+    else{sw=bgIm.naturalWidth;sh=sw/rr;sx=0;sy=(bgIm.naturalHeight-sh)/2;}
+    const c=camAt(t),m=(c.zoom-1)/2;
+    const ox=clamp(c.panX,-W*m,W*m),oy=clamp(c.panY,-H*m,H*m);
+    ctx.save();ctx.translate(W/2+ox,H/2+oy);ctx.scale(c.zoom,c.zoom);ctx.translate(-W/2,-H/2);
+    ctx.drawImage(bgIm,sx,sy,sw,sh,0,0,W,H);ctx.restore();
+    mv('bg-cam');
+  }else{ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);}
+}
+function bgDust(t){
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  for(let i=0;i<44;i++){const px=(rnd(i)*W+t*(14+rnd(i+7)*26))%W;const py=(rnd(i+3)*H+t*(8+rnd(i+11)*18))%H;
+    const s=1+rnd(i+5)*2.4;ctx.fillRect(px,py,s,s);}
+  mv('bg-particles');
+}
+function bgTheme(t){
+  const pulse=0.75+0.25*Math.sin(t*0.8);
+  ctx.fillStyle='rgba('+theme.r+','+theme.g+','+theme.b+','+(theme.a*pulse).toFixed(3)+')';
+  ctx.fillRect(0,0,W,H);
+  mv('bg-theme');
+}
+function bgStage(t){
+  const sp=0.55;
+  for(let L=0;L<2;L++){
+    const amp=36+L*24,yb=H*(L===0?0.80:0.90),spd=(L===0?9:22)*sp;
+    ctx.fillStyle=L===0?'rgba(50,32,24,0.45)':'rgba(8,5,5,0.85)';
+    ctx.beginPath();ctx.moveTo(0,H);
+    for(let x=0;x<=W;x+=24){const y=yb+Math.sin((x+t*spd)*0.0016+L*2.1)*amp+Math.sin((x+t*spd*0.6)*0.004+L)*amp*0.35;ctx.lineTo(x,y);}
+    ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  }
+  mv('bg-stage');
+}
+
+// ---------- 文字 ----------
+function bigText(text,x,y,size,color,outline,rot,scale,align){
+  if(typeof text!=='string'){window.__badText=(window.__badText||[]);if(window.__badText.length<10)window.__badText.push(String(text));text=String(text);}
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);if(scale)ctx.scale(scale,scale);
+  ctx.font='900 '+size+'px "Microsoft YaHei"';ctx.textAlign=align||'center';ctx.textBaseline='middle';
+  const tw=ctx.measureText(text).width;
+  const ax=align==='left'?0:(align==='right'?-tw/2:0);
+  if(outline){ctx.lineWidth=size*0.12;ctx.strokeStyle=outline;ctx.lineJoin='round';ctx.strokeText(text,ax,0);}
+  ctx.fillStyle=color;ctx.fillText(text,ax,0);ctx.restore();
+  tRect(x-(align==='left'?0:tw/2)-size*0.1,y-size*0.62,tw+size*0.2,size*1.24);
+}
+// ---------- 字幕（底部条 + 关键词金色高亮） ----------
+const ACC_KEYS=['曹操','曹昂','曹丕','曹叡','曹爽','曹植','司马懿','司马师','司马昭','司马炎','张绣','张济','邹夫人','丁夫人','典韦','汉献帝','宛城','洛阳','高平陵','晋朝','寡妇','嫡长子'];
+function subBar(text){
+  ctx.save();
+  ctx.font='900 64px "Microsoft YaHei"';
+  const tw=ctx.measureText(text).width;
+  const bx=W/2-tw/2-38,by=H-156,bw=tw+76,bh=100;
+  ctx.fillStyle='rgba(0,0,0,0.66)';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle=COL.gold;ctx.fillRect(bx,by,7,bh);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=9;ctx.strokeStyle='#000';
+  const acc=ACC_KEYS.find(k=>text.includes(k));
+  let x=W/2-tw/2;
+  for(const chr of text){
+    const w=ctx.measureText(chr).width;
+    const inAcc=acc&&acc.includes(chr);
+    ctx.strokeText(chr,x+w/2,by+bh/2+3);
+    ctx.fillStyle=inAcc?COL.gold:'#fff';
+    ctx.fillText(chr,x+w/2,by+bh/2+3);
+    x+=w;
+  }
+  ctx.restore();
+  QC.subRect=[bx,by,bw,bh];tRect(bx,by,bw,bh);
+}
+function card(x,y,w,h,o){o=o||{};ctx.save();
+  if(o.alpha!=null)ctx.globalAlpha=o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);const s=o.scale||1;ctx.scale(s,s);
+  ctx.fillStyle=o.fill||'rgba(255,255,255,0.055)';ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.fill();
+  if(o.stroke){ctx.strokeStyle=o.stroke;ctx.lineWidth=o.lw||3;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.stroke();}
+  ctx.restore();
+  if(!o.noQC)QC.fgRects.push([x-w/2*s,y-h/2*s,w*s,h*s]);}
+function chip(x,y,text,color,t0,t,size){const p=eob(clamp((t-t0)/0.35,0,1));if(p<=0)return;
+  ctx.save();ctx.font='900 '+(size||52)+'px "Microsoft YaHei"';const tw=ctx.measureText(text).width;
+  card(x,y,tw+56,size+34,{stroke:color,lw:3,scale:p,fill:'rgba(255,255,255,0.07)'});
+  bigText(text,x,y,size||52,color,null,0,p);mv('chip-'+text+t0);ctx.restore();}
+function glow(x,y,r,color,a){ctx.save();const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,color.replace('A',a.toFixed(3)));g.addColorStop(1,color.replace('A','0'));
+  ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore();}
+function glowRim(x,y,r,t,col){col=col||'rgba(232,184,75,';
+  const pr=r*(1+0.03*Math.sin(t*2.2));
+  ctx.save();const g=ctx.createRadialGradient(x,y,pr*0.2,x,y,pr);
+  g.addColorStop(0,col+'0.32)');g.addColorStop(1,col+'0)');
+  ctx.fillStyle=g;ctx.fillRect(x-pr,y-pr,pr*2,pr*2);ctx.restore();mv('rim'+(x|0));}
+function fadeRect(a){ctx.fillStyle='rgba(0,0,0,'+a.toFixed(3)+')';ctx.fillRect(0,0,W,H);}
+
+// ---------- 转场 ----------
+function dip(t,cut){const dt=t-cut;if(dt>=0&&dt<0.3){const a=Math.sin(Math.PI*dt/0.3);ctx.fillStyle=COL.bg;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function veil(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const a=Math.sin(Math.PI*dt/0.32)*0.30;ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softWipe(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const p=eio(dt/0.32);ctx.fillStyle=color;ctx.globalAlpha=0.5;ctx.fillRect(-140+p*(W+280),0,140,H);ctx.globalAlpha=1;}}
+const TRANS_KINDS=['dip','veil','softWipe'];
+const TRANS={};let kidx=0;
+for(const sc of SB.scenes){if(sc.s<=0)continue;
+  const r=TRANS_KINDS[kidx%TRANS_KINDS.length];TRANS[sc.s.toFixed(3)]=[r, kidx%2?COL.goldD:COL.redD];kidx++;}
+
+// ---------- 场景 ----------
+function sceneByT(t){for(const s of SB.scenes){if(t>=s.s&&t<s.e)return s;}return SB.scenes[SB.scenes.length-1];}
+function subAt(t){for(const s of SB.subs){if(t>=s[0]&&t<s[1])return s[2];}return '';}
+
+// ============ S0 钩子 ============
+// 一个寡妇 改写了三国三百年的走向
+function scHookWidow(sc,t,tl){
+  const p=eob(clamp(tl/0.5,0,1));
+  glow(960,470,430,'rgba(232,184,75,A)',0.32);
+  bigText('寡妇',960,470,330,COL.gold,COL.redD,Math.sin(t*1.5)*0.03,p);mv('big-widow');
+  for(let i=0;i<14;i++){const a=t*0.8+i*0.45,r=350+Math.sin(t*1.3+i)*30;
+    const px=960+Math.cos(a)*r,py=470+Math.sin(a)*r*0.7;
+    ctx.fillStyle='rgba(232,184,75,'+(0.4+0.3*Math.sin(t*3+i)).toFixed(3)+')';
+    ctx.beginPath();ctx.arc(px,py,5+((i%3)),0,7);ctx.fill();mv('spark'+i);}
+  chip(960,180,'一个女人',COL.cream,sc.s+0.15,t,60);
+  chip(960,830,'改写了三国三百年的走向',COL.red,sc.s+0.7,t,58);
+  mv('hook-widow');
+}
+// 这话听着像标题党 / 但三国历史最大的拐弯
+function scHookRewrite(sc,t,tl){
+  const kp=eob(clamp(tl/0.45,0,1));
+  if(kp>0){glowRim(1330,580,340,t,'rgba(232,184,75,');
+    sprite('caocao',1330,600+Math.sin(t*1.2)*6,520,{alpha:0.98,scale:kp});mv('rw-caocao');}
+  chip(560,240,'这话听着像标题党',COL.cream,sc.s+0.15,t,58);
+  if(tl>0.8){const qp=eob(clamp((tl-0.8)/0.4,0,1));
+    bigText('但三国历史最大的拐弯',560,640,76,COL.gold,COL.ink,0,qp);mv('rw-turn');}
+  chip(960,850,'在曹操身上',COL.red,sc.s+1.3,t,56);
+  mv('hook-rewrite');
+}
+// 起点可能就是曹操娶了一个寡妇那一晚
+function scHookMarry(sc,t,tl){
+  const cp=eob(clamp(tl/0.5,0,1));
+  glowRim(560,600,300,t,'rgba(232,184,75,');
+  if(cp>0)sprite('caocao',560,620+Math.sin(t*1.2)*6,500,{alpha:0.99,scale:cp});mv('marry-cao');
+  const zp=eob(clamp((tl-0.25)/0.5,0,1));
+  if(zp>0)sprite('zou',1380,640+Math.sin(t*1.6)*6,460,{alpha:0.98,scale:zp});mv('marry-zou');
+  // 红盖头飘落
+  const rp=clamp((tl-0.4)/0.6,0,1);
+  if(rp>0){ctx.save();ctx.translate(960,430+rp*260);ctx.fillStyle='rgba(192,57,43,0.9)';
+    ctx.beginPath();ctx.moveTo(0,-70);ctx.lineTo(120,0);ctx.lineTo(0,70);ctx.lineTo(-120,0);ctx.closePath();ctx.fill();ctx.restore();mv('veil');}
+  chip(960,180,'起点 可能就是那一晚',COL.gold,sc.s+0.1,t,60);
+  bigText('娶一个寡妇',960,860,72,COL.cream,COL.ink,0,eob(clamp((tl-0.9)/0.35,0,1)));mv('marry-word');
+  mv('hook-marry');
+}
+// 官渡赤壁那些大仗都没这一晚改写得狠
+function scHookBattle(sc,t,tl){
+  const hp=eob(clamp(tl/0.4,0,1));
+  if(hp>0){sprite('halberd',700,600,420,{alpha:0.92,scale:hp,rot:-0.5+Math.sin(t*1.4)*0.06});mv('hb1');
+    sprite('halberd',1220,600,420,{alpha:0.92,scale:hp,rot:0.5-Math.sin(t*1.4)*0.06,flip:true});mv('hb2');}
+  chip(560,240,'官渡',COL.red,sc.s+0.1,t,66);
+  chip(1360,240,'赤壁',COL.red,sc.s+0.3,t,66);
+  if(tl>0.6)bigText('那些大仗都没这一晚狠',960,500,72,COL.cream,COL.ink,0,eob(clamp((tl-0.6)/0.35,0,1)));mv('battle-word');
+  chip(960,850,'这一晚 改写得狠',COL.gold,sc.s+1.2,t,56);
+  mv('hook-battle');
+}
+// 先说这一晚怎么来的
+function scHookHow(sc,t,tl){
+  glow(960,480,380,'rgba(232,184,75,A)',0.26);
+  const p=eob(clamp(tl/0.45,0,1));
+  bigText('怎么来的？',960,460,140,COL.gold,COL.ink,Math.sin(t*2)*0.02,p);mv('how-q');
+  const qp=eob(clamp((tl-0.3)/0.4,0,1));
+  if(qp>0){ctx.save();ctx.strokeStyle=COL.red;ctx.lineWidth=14;ctx.beginPath();ctx.arc(1380,360,90,0,7);ctx.stroke();ctx.restore();mv('qmark-ring');}
+  sprite('camp',600,680,420,{alpha:0.85,scale:eob(clamp((tl-0.5)/0.4,0,1))});mv('how-camp');
+  chip(960,170,'先说这一晚',COL.cream,sc.s+0.15,t,60);
+  mv('hook-how');
+}
+
+// ============ S1 宛城那一夜 ============
+function scAd197(sc,t,tl){
+  theme.r=192;theme.g=57;theme.b=43;theme.a=0.10;
+  glow(960,480,400,'rgba(192,57,43,A)',0.3);
+  const p=eob(clamp(tl/0.45,0,1));
+  card(960,420,980,220,{stroke:COL.gold,scale:p,fill:'rgba(232,184,75,0.14)'});
+  bigText('公元一百九十七年',960,420,92,COL.cream,COL.goldD,0,p);mv('ad197');
+  const zp=eob(clamp((tl-0.35)/0.4,0,1));
+  if(zp>0){sprite('zhangxiu',960,700,380,{alpha:0.9,scale:zp,filter:'grayscale(0.4)'});mv('ad-zx');}
+  chip(960,170,'宛城',COL.gold,sc.s+0.1,t,64);
+  mv('ad197-sc');
+}
+// 张绣投降了曹操 / 张绣是谁 西凉军阀张济的侄子
+function scZhangxiuWho(sc,t,tl){
+  glowRim(960,580,380,t,'rgba(192,57,43,');
+  const p=eob(clamp(tl/0.45,0,1));
+  sprite('zhangxiu',960,600+Math.sin(t*1.2)*7,500,{alpha:0.98,scale:p});mv('zx-main');
+  const n=eob(clamp((tl-0.25)/0.35,0,1));
+  if(n>0){card(960,180,420,150,{stroke:COL.gold,scale:n,fill:'rgba(232,184,75,0.16)'});
+    bigText('张绣',960,180,92,COL.cream,COL.goldD,0,n);mv('zx-name');}
+  if(tl>0.8){const jp=eob(clamp((tl-0.8)/0.4,0,1));
+    if(jp>0){sprite('zhangxiu',1500,680,300,{alpha:0.7,scale:jp,filter:'grayscale(0.6)'});mv('zj-small');}
+    chip(1480,420,'张济 · 西凉军阀',COL.cream,sc.s+0.9,t,50);}
+  chip(560,840,'他的侄子',COL.red,sc.s+0.55,t,58);
+  mv('zx-who');
+}
+// 张济死了 张绣接管了他的部队
+function scZhangjiDead(sc,t,tl){
+  const p=eob(clamp(tl/0.4,0,1));
+  bigText('张济死了',560,320,96,COL.red,COL.ink,0,p);mv('zj-dead-word');
+  sprite('zhangxiu',1400,620,420,{alpha:0.85,scale:eob(clamp((tl-0.2)/0.4,0,1)),filter:'grayscale(0.75)'});mv('zj-dead-img');
+  // 军权交接
+  if(tl>0.6){const q=eob(clamp((tl-0.6)/0.4,0,1));
+    sprite('seal',960,760,240,{alpha:0.95,scale:q,rot:Math.sin(t*2)*0.06});mv('zj-seal');}
+  chip(960,180,'部队归了张绣',COL.gold,sc.s+0.35,t,60);
+  if(tl>0.9)chip(960,860,'接过大旗',COL.cream,sc.s+0.9,t,54);
+  mv('zj-dead');
+}
+// 曹操兵不血刃收编了一支军队 本来是一桩挺好的收购案
+function scBloodless(sc,t,tl){
+  sprite('camp',340,680,440,{alpha:0.8,scale:eob(clamp(tl/0.4,0,1))});mv('bl-camp');
+  glowRim(1000,600,360,t,'rgba(232,184,75,');
+  sprite('caocao',1000,620+Math.sin(t*1.1)*6,520,{alpha:0.98,scale:eob(clamp(tl/0.45,0,1))});mv('bl-cao');
+  sprite('zhangxiu',1500,760,300,{alpha:0.85,scale:eob(clamp((tl-0.3)/0.4,0,1)),rot:Math.sin(t)*0.05});mv('bl-zx');
+  chip(960,180,'兵不血刃',COL.gold,sc.s+0.15,t,66);
+  if(tl>0.8)chip(960,880,'一桩挺好的收购案',COL.cream,sc.s+0.8,t,56);
+  mv('bl-sc');
+}
+// 结果曹操看上了张绣的婶婶 张济的老婆姓邹
+function scSeesZou(sc,t,tl){
+  glowRim(560,600,320,t,'rgba(232,184,75,');
+  sprite('caocao',560,620+Math.sin(t*1.3)*6,500,{alpha:0.98,scale:eob(clamp(tl/0.4,0,1))});mv('sz-cao');
+  sprite('zou',1380,640+Math.sin(t*1.7)*8,460,{alpha:0.98,scale:eob(clamp((tl-0.25)/0.4,0,1))});mv('sz-zou');
+  // 心动光
+  glow(1380,560,220,'rgba(232,184,75,A)',0.3+0.15*Math.sin(t*5));
+  chip(960,180,'看上了',COL.red,sc.s+0.1,t,64);
+  if(tl>0.6)chip(560,850,'张绣的婶婶',COL.cream,sc.s+0.6,t,56);
+  if(tl>0.9)chip(1380,850,'张济的老婆 姓邹',COL.gold,sc.s+0.9,t,56);
+  mv('sees-zou');
+}
+// 他直接把人给纳了
+function scTakeZou(sc,t,tl){
+  theme.r=192;theme.g=57;theme.b=43;theme.a=0.16;
+  ctx.save();ctx.globalAlpha=0.1+0.05*Math.sin(t*4);ctx.fillStyle=COL.red;ctx.fillRect(0,0,W,H);ctx.restore();mv('red-pulse');
+  glow(960,520,440,'rgba(192,57,43,A)',0.34);
+  sprite('caocao',640,600,480,{alpha:0.98,scale:eob(clamp(tl/0.4,0,1))});mv('tk-cao');
+  sprite('zou',1280,620,440,{alpha:0.98,scale:eob(clamp((tl-0.2)/0.4,0,1))});mv('tk-zou');
+  const p=eob(clamp((tl-0.3)/0.4,0,1));
+  bigText('纳了',960,300,150,COL.gold,COL.redD,Math.sin(t*2)*0.02,p);mv('tk-word');
+  chip(960,880,'直接把人给纳了',COL.cream,sc.s+0.5,t,60);
+  mv('take-zou');
+}
+// 张绣觉得这是奇耻大辱 ...
+function scShame(sc,t,tl){
+  glowRim(960,560,400,t,'rgba(192,57,43,');
+  sprite('zhangxiu',960,600+Math.sin(t*3.2)*10,540,{alpha:0.99,scale:eob(clamp(tl/0.4,0,1)),rot:Math.sin(t*3)*0.05});mv('sh-zx');
+  const p=eob(clamp((tl-0.2)/0.4,0,1));
+  bigText('奇耻大辱',960,260,110,COL.red,COL.ink,Math.sin(t*3)*0.02,p);mv('sh-word');
+  if(tl>0.7)chip(560,820,'收编我的部队',COL.cream,sc.s+0.7,t,54);
+  if(tl>1.2)chip(1380,820,'还要睡我婶婶',COL.cream,sc.s+1.2,t,54);
+  if(tl>1.7)chip(960,170,'这谁忍得了',COL.gold,sc.s+1.7,t,58);
+  mv('shame');
+}
+// 当晚张绣就反了 偷袭曹操大营
+function scRevolt(sc,t,tl){
+  theme.r=192;theme.g=57;theme.b=43;theme.a=0.20;
+  sprite('camp',400,660,440,{alpha:0.8});mv('rv-camp');
+  const zp=eob(clamp(tl/0.4,0,1));
+  if(zp>0){glowRim(1350,560,360,t,'rgba(192,57,43,');
+    sprite('zhangxiu',1350,580+Math.sin(t*4)*12,540,{alpha:0.99,scale:zp,rot:Math.sin(t*4)*0.08});mv('rv-zx');
+    sprite('halberd',1580,560,340,{alpha:0.95,scale:zp,rot:Math.sin(t*5)*0.15});mv('rv-hb');}
+  ctx.save();ctx.globalAlpha=0.16+0.1*Math.sin(t*7);ctx.fillStyle=COL.red;ctx.fillRect(0,0,W,H);ctx.restore();mv('rv-pulse');
+  const p=eob(clamp((tl-0.2)/0.3,0,1));
+  bigText('反了！',960,300,150,COL.red,COL.ink,Math.sin(t*3)*0.03,p);mv('rv-word');
+  chip(960,880,'偷袭曹操大营',COL.cream,sc.s+0.4,t,60);
+  mv('revolt');
+}
+// 曹操输得比赤壁还惨
+function scLoseBad(sc,t,tl){
+  theme.r=160;theme.g=40;theme.b=30;theme.a=0.18;
+  sprite('camp',330,680,400,{alpha:0.7,rot:-0.06});mv('lb-camp');
+  const p=eob(clamp(tl/0.4,0,1));
+  sprite('caocao',1100,640,500,{alpha:0.9,scale:p,rot:-0.16+Math.sin(t*2)*0.04,filter:'grayscale(0.5)'});mv('lb-cao');
+  const q=eob(clamp((tl-0.3)/0.4,0,1));
+  bigText('输得比赤壁还惨',960,300,88,COL.red,COL.ink,Math.sin(t*2.5)*0.02,q);mv('lb-word');
+  chip(960,160,'宛城那一夜',COL.gold,sc.s+0.1,t,60);
+  chip(960,860,'曹操吃了大亏',COL.cream,sc.s+0.8,t,54);
+  mv('lose-bad');
+}
+// 贴身保镖典韦 一个人堵在营门口
+function scDianweiHold(sc,t,tl){
+  sprite('camp',500,660,460,{alpha:0.85,scale:eob(clamp(tl/0.35,0,1))});mv('dw-camp');
+  glowRim(960,580,380,t,'rgba(232,184,75,');
+  sprite('dianwei',960,600+Math.sin(t*1.4)*8,560,{alpha:0.99,scale:eob(clamp(tl/0.4,0,1))});mv('dw-main');
+  sprite('halberd',760,640,360,{alpha:0.95,scale:eob(clamp((tl-0.2)/0.35,0,1)),rot:-0.35+Math.sin(t*2)*0.05});mv('dw-hb1');
+  sprite('halberd',1160,640,360,{alpha:0.95,scale:eob(clamp((tl-0.2)/0.35,0,1)),rot:0.35-Math.sin(t*2)*0.05,flip:true});mv('dw-hb2');
+  chip(960,180,'贴身保镖典韦',COL.gold,sc.s+0.1,t,64);
+  if(tl>0.7)chip(960,850,'一个人 堵在营门口',COL.cream,sc.s+0.7,t,58);
+  // 兵影逼近
+  for(let i=0;i<3;i++){
+    const bx=240+i*200+Math.sin(t*1.5+i)*12;
+    sprite('zhangxiu',bx,760,260-i*40,{alpha:0.5-i*0.08,filter:'grayscale(0.7)'});mv('dw-enemy'+i);}
+  mv('dianwei-hold');
+}
+// 中了几十枪死了 / 兵不敢从尸体前过
+function scDianweiFall(sc,t,tl){
+  theme.r=160;theme.g=40;theme.b=30;theme.a=0.20;
+  fadeRect(clamp(tl*0.5,0,0.4));
+  const p=clamp(tl/0.9,0,1);
+  sprite('dianwei',960,640,520,{alpha:0.9*(1-p*0.3),rot:0.5*p+Math.sin(t)*0.02,filter:'grayscale(0.8)'});mv('dw-fall');
+  sprite('halberd',760,760,300,{alpha:0.7,rot:-0.6+Math.sin(t)*0.05});mv('dw-hb-f1');
+  sprite('halberd',1160,760,300,{alpha:0.7,rot:0.6-Math.sin(t)*0.05,flip:true});mv('dw-hb-f2');
+  const q=eob(clamp((tl-0.25)/0.4,0,1));
+  bigText('中了几十枪',960,320,100,COL.red,COL.ink,Math.sin(t*2)*0.02,q);mv('dw-word');
+  if(tl>0.6)chip(960,850,'兵都不敢从他尸体前过',COL.cream,sc.s+0.6,t,56);
+  chip(960,180,'典韦死了',COL.gold,sc.s+0.1,t,62);
+  mv('dianwei-fall');
+}
+// 大儿子曹昂 让马给曹操
+function scAngMount(sc,t,tl){
+  glowRim(960,600,380,t,'rgba(232,184,75,');
+  sprite('caorang',720,600+Math.sin(t*1.2)*7,500,{alpha:0.99,scale:eob(clamp(tl/0.4,0,1))});mv('am-ang');
+  const hp=eob(clamp((tl-0.25)/0.45,0,1));
+  if(hp>0){const hx=720+ (tl>1.1?280*clamp((tl-1.1)/0.5,0,1):0);
+    sprite('horse',hx,700,330,{alpha:0.95,scale:hp,flip:tl>1.1});mv('am-horse');}
+  sprite('caocao',1260,640,440,{alpha:0.95,scale:eob(clamp((tl-0.4)/0.4,0,1))});mv('am-cao');
+  // 流箭
+  if(tl>1.6){const ap=clamp((tl-1.6)/0.5,0,1);
+    sprite('arrow',1000+ap*400,500-Math.sin(ap*3)*40,200,{alpha:0.95,rot:ap*0.6+0.4});mv('am-arrow');}
+  chip(960,180,'大儿子 曹昂',COL.gold,sc.s+0.1,t,62);
+  if(tl>0.6)chip(560,880,'把马让给曹操',COL.cream,sc.s+0.6,t,56);
+  if(tl>1.5)chip(1400,880,'流箭射中了曹操的坐骑',COL.red,sc.s+1.5,t,50);
+  mv('ang-mount');
+}
+// 曹昂把马给他 自己留下断后 然后曹昂也死了
+function scAngFall(sc,t,tl){
+  theme.r=150;theme.g=30;theme.b=25;theme.a=0.22;
+  fadeRect(clamp(tl*0.6,0,0.55));
+  sprite('caocao',420,680,440,{alpha:0.8,flip:true,rot:-0.08,filter:'grayscale(0.4)'});mv('af-cao');
+  const ap=eob(clamp(tl/0.5,0,1));
+  glowRim(1300,600,340,t,'rgba(192,57,43,');
+  sprite('caorang',1300,620,520,{alpha:0.9,scale:ap,flip:true});mv('af-ang');
+  sprite('horse',1500,760,300,{alpha:0.85,scale:ap,flip:true});mv('af-horse');
+  const p=eob(clamp((tl-0.4)/0.4,0,1));
+  bigText('留下断后',960,260,110,COL.gold,COL.ink,0,p);mv('af-word');
+  if(tl>1.0){const q=eob(clamp((tl-1.0)/0.4,0,1));
+    bigText('曹昂也死了',960,860,80,COL.red,COL.ink,Math.sin(t*2)*0.02,q);mv('af-dead');}
+  mv('ang-fall');
+}
+// 曹操逃出来 哭得不成样子 老婆后来也没了
+function scEscape(sc,t,tl){
+  theme.r=150;theme.g=36;theme.b=28;theme.a=0.18;
+  fadeRect(clamp(tl*0.4,0,0.35));
+  const p=eob(clamp(tl/0.5,0,1));
+  sprite('caocao',1080,640,520,{alpha:0.88,scale:p,flip:true,rot:-0.14+Math.sin(t*2.2)*0.05,filter:'grayscale(0.55)'});mv('esc-cao');
+  // 踉跄尘
+  for(let i=0;i<6;i++){const ex=1080+Math.sin(t*3+i*2)*80,ey=760-i*30-Math.sin(t*2+i)*20;
+    ctx.fillStyle='rgba(255,255,255,0.12)';ctx.beginPath();ctx.arc(ex,ey,8+i*2,0,7);ctx.fill();mv('dust'+i);}
+  chip(960,180,'曹操逃出来',COL.gold,sc.s+0.1,t,64);
+  if(tl>0.6)bigText('哭得不成样子',960,360,88,COL.cream,COL.ink,0,eob(clamp((tl-0.6)/0.35,0,1)));mv('esc-cry');
+  if(tl>1.5){const d=eob(clamp((tl-1.5)/0.4,0,1));
+    if(d>0){sprite('ding',560,680,360,{alpha:0.5*d,scale:d,filter:'grayscale(0.7)'});mv('esc-ding');}
+    chip(560,300,'老婆后来也没了',COL.red,sc.s+1.6,t,52);}
+  mv('escape');
+}
+
+// ============ S2 曹昂本来是要接班的 ============
+function scAngHeir(sc,t,tl){
+  theme.r=232;theme.g=184;theme.b=75;theme.a=0.10;
+  glow(960,560,430,'rgba(232,184,75,A)',0.3);
+  const p=eob(clamp(tl/0.45,0,1));
+  sprite('caorang',960,600+Math.sin(t*1.2)*6,560,{alpha:0.99,scale:p});mv('ah-ang');
+  const n=eob(clamp((tl-0.2)/0.35,0,1));
+  if(n>0){card(960,170,560,160,{stroke:COL.gold,scale:n,fill:'rgba(232,184,75,0.18)'});
+    bigText('曹昂',960,170,110,COL.cream,COL.goldD,0,n);mv('ah-name');}
+  if(tl>0.5)chip(560,840,'本来是要接班的',COL.gold,sc.s+0.5,t,58);
+  if(tl>0.9)chip(1400,840,'曹操的嫡长子',COL.cream,sc.s+0.9,t,58);
+  mv('ang-heir');
+}
+// 生母死得早 是丁夫人把他养大
+function scDingRaises(sc,t,tl){
+  glowRim(620,620,300,t,'rgba(232,184,75,');
+  sprite('ding',620,640+Math.sin(t*1.3)*6,480,{alpha:0.98,scale:eob(clamp(tl/0.4,0,1))});mv('dr-ding');
+  sprite('loom',1000,700,420,{alpha:0.9,scale:eob(clamp((tl-0.2)/0.4,0,1))});mv('dr-loom');
+  sprite('caorang',1420,660,320,{alpha:0.85,scale:eob(clamp((tl-0.35)/0.4,0,1))});mv('dr-ang');
+  chip(960,180,'生母死得早',COL.cream,sc.s+0.1,t,60);
+  if(tl>0.5)chip(620,250,'丁夫人把他养大',COL.gold,sc.s+0.5,t,56);
+  if(tl>1.2)chip(960,860,'没有亲儿子 当命根子',COL.red,sc.s+1.2,t,54);
+  mv('ding-raises');
+}
+// 曹操二十岁就开始培养曹昂 带他上战场
+function scCaocaoTrains(sc,t,tl){
+  sprite('camp',430,680,430,{alpha:0.8,scale:eob(clamp(tl/0.35,0,1))});mv('ct-camp');
+  glowRim(960,600,380,t,'rgba(232,184,75,');
+  sprite('caocao',760,620+Math.sin(t*1.2)*6,520,{alpha:0.98,scale:eob(clamp(tl/0.4,0,1))});mv('ct-cao');
+  sprite('caorang',1160,640,460,{alpha:0.95,scale:eob(clamp((tl-0.25)/0.4,0,1))});mv('ct-ang');
+  chip(960,180,'二十岁就开始培养曹昂',COL.gold,sc.s+0.1,t,60);
+  if(tl>0.6)chip(760,850,'带他上战场',COL.cream,sc.s+0.6,t,56);
+  if(tl>1.2)chip(1160,850,'手把手教带兵',COL.gold,sc.s+1.2,t,56);
+  mv('caocao-trains');
+}
+// 曹操当时四十多岁 曹昂二十岁 不出意外
+function scAges(sc,t,tl){
+  glowRim(620,580,320,t,'rgba(232,184,75,');
+  sprite('caocao',620,600,500,{alpha:0.96,scale:eob(clamp(tl/0.4,0,1))});mv('ag-cao');
+  chip(620,180,'四十多岁',COL.cream,sc.s+0.1,t,64);
+  sprite('caorang',1300,620,440,{alpha:0.96,scale:eob(clamp((tl-0.25)/0.4,0,1))});mv('ag-ang');
+  chip(1300,180,'二十岁',COL.gold,sc.s+0.4,t,64);
+  if(tl>0.6){const p=eob(clamp((tl-0.6)/0.4,0,1));
+    card(960,850,460,130,{stroke:COL.gold,scale:p,fill:'rgba(232,184,75,0.14)'});
+    bigText('不出意外',960,850,72,COL.cream,COL.goldD,0,p);mv('ag-ok');}
+  mv('ages');
+}
+// 曹操的位子就是曹昂的
+function scAngFuture(sc,t,tl){
+  theme.r=232;theme.g=184;theme.b=75;theme.a=0.14;
+  glow(960,560,420,'rgba(232,184,75,A)',0.32);
+  sprite('caorang',960,600+Math.sin(t*1.2)*6,560,{alpha:0.99,scale:eob(clamp(tl/0.4,0,1))});mv('afu-ang');
+  sprite('seal',1420,300,220,{alpha:0.9,rot:Math.sin(t*1.5)*0.08,scale:eob(clamp((tl-0.3)/0.4,0,1))});mv('afu-seal');
+  chip(960,180,'位子就是曹昂的',COL.gold,sc.s+0.15,t,64);
+  if(tl>0.7)chip(560,850,'一表人才',COL.cream,sc.s+0.7,t,56);
+  if(tl>1.0)chip(1360,850,'人缘好 老臣都认他',COL.cream,sc.s+1.0,t,54);
+  mv('ang-future');
+}
+// 结果这一夜 什么都没了
+function scNightLost(sc,t,tl){
+  theme.r=120;theme.g=30;theme.b=25;theme.a=0.2;
+  fadeRect(clamp(tl*0.7,0,0.62));
+  const p=eob(clamp(tl/0.5,0,1));
+  sprite('caorang',960,640,480,{alpha:0.5*p,scale:p,filter:'grayscale(0.85)'});mv('nl-ang');
+  const q=eob(clamp((tl-0.4)/0.4,0,1));
+  bigText('什么都没了',960,300,120,COL.red,COL.ink,Math.sin(t*2)*0.02,q);mv('nl-word');
+  // 烛光
+  glow(960,820,160,'rgba(232,184,75,A)',clamp(0.3-tl*0.15,0,0.3));
+  chip(960,170,'这一夜',COL.gold,sc.s+0.1,t,64);
+  mv('night-lost');
+}
+// 丁夫人知道曹昂死了 跟曹操闹
+function scDingFury(sc,t,tl){
+  theme.r=160;theme.g=40;theme.b=30;theme.a=0.16;
+  glowRim(960,560,380,t,'rgba(192,57,43,');
+  sprite('ding',960,600+Math.sin(t*3.5)*12,520,{alpha:0.99,scale:eob(clamp(tl/0.4,0,1)),rot:Math.sin(t*3)*0.04});mv('df-ding');
+  const p=eob(clamp((tl-0.2)/0.35,0,1));
+  bigText('我儿子死了！',960,260,110,COL.red,COL.ink,Math.sin(t*3)*0.02,p);mv('df-word');
+  chip(960,850,'还跟你过什么',COL.cream,sc.s+0.6,t,58);
+  chip(960,180,'丁夫人 闹翻了',COL.gold,sc.s+0.1,t,60);
+  mv('ding-fury');
+}
+// 曹操去求她回来 她不见 她坐在那织布 头都不抬
+function scBeg(sc,t,tl){
+  sprite('loom',980,690,440,{alpha:0.95,scale:eob(clamp(tl/0.4,0,1))});mv('bg-loom');
+  sprite('ding',880,700,420,{alpha:0.98,scale:eob(clamp((tl-0.2)/0.4,0,1))});mv('bg-ding');
+  // 门口背影
+  const cp=eob(clamp((tl-0.5)/0.4,0,1));
+  if(cp>0){sprite('caocao',1500,680,440,{alpha:0.7,scale:cp,flip:true,filter:'grayscale(0.6)'});mv('bg-cao');}
+  chip(960,180,'去求她回来',COL.cream,sc.s+0.1,t,60);
+  if(tl>0.5)chip(1500,300,'她不见',COL.gold,sc.s+0.5,t,56);
+  if(tl>1.2)chip(560,300,'坐在那织布',COL.cream,sc.s+1.2,t,54);
+  if(tl>1.8)chip(960,860,'头都不抬',COL.red,sc.s+1.8,t,56);
+  mv('beg');
+}
+// 曹操摸着她的背说 你就不想我了吗 / 丁夫人还是不回头 / 那咱们真离了
+function scBegFinal(sc,t,tl){
+  theme.r=160;theme.g=50;theme.b=35;theme.a=0.12;
+  fadeRect(clamp(tl*0.3,0,0.28));
+  sprite('loom',820,690,400,{alpha:0.9,scale:eob(clamp(tl/0.35,0,1))});mv('bf-loom');
+  sprite('ding',900,700,420,{alpha:0.97,scale:eob(clamp((tl-0.15)/0.35,0,1))});mv('bf-ding');
+  sprite('caocao',1240,690,430,{alpha:0.9,scale:eob(clamp((tl-0.3)/0.35,0,1))});mv('bf-cao');
+  chip(960,180,'摸着她的背说',COL.cream,sc.s+0.1,t,58);
+  if(tl>0.5){const p=eob(clamp((tl-0.5)/0.4,0,1));
+    bigText('你就不想我了吗',960,360,84,COL.gold,COL.ink,0,p);mv('bf-q');}
+  if(tl>1.2)chip(960,860,'还是不回头',COL.red,sc.s+1.2,t,56);
+  if(tl>1.8){const d=eob(clamp((tl-1.8)/0.4,0,1));
+    card(1460,850,420,120,{stroke:COL.gold,scale:d,fill:'rgba(192,57,43,0.25)'});
+    bigText('真离了',1460,850,68,COL.red,COL.goldD,0,d);mv('bf-leave');}
+  mv('beg-final');
+}
+// 这段史书写得特别清楚 曹操晚年反复念叨
+function scRegret(sc,t,tl){
+  sprite('edict',560,660,480,{alpha:0.92,scale:eob(clamp(tl/0.4,0,1)),rot:-0.08+Math.sin(t)*0.02});mv('rg-edict');
+  sprite('caocao',1340,620,500,{alpha:0.9,scale:eob(clamp((tl-0.3)/0.4,0,1)),filter:'grayscale(0.35)'});mv('rg-cao');
+  chip(960,180,'史书写得特别清楚',COL.cream,sc.s+0.1,t,58);
+  if(tl>0.6)bigText('我死之后',560,420,80,COL.gold,COL.ink,0,eob(clamp((tl-0.6)/0.3,0,1)));mv('rg-after');
+  if(tl>1.0)bigText('曹昂要是问我 他妈在哪',1340,300,72,COL.red,COL.ink,0,eob(clamp((tl-1.0)/0.35,0,1)));mv('rg-q');
+  if(tl>1.6)chip(960,850,'我怎么回答',COL.cream,sc.s+1.6,t,60);
+  mv('regret');
+}
+// 你看一个娶亲的决定 搭上了儿子的命 老婆也跟他离了
+function scPrice(sc,t,tl){
+  // 三张因果卡
+  const c1=eob(clamp(tl/0.4,0,1));
+  if(c1>0){card(480,600,420,260,{stroke:COL.gold,scale:c1,fill:'rgba(232,184,75,0.14)'});
+    bigText('娶亲的决定',480,600,56,COL.cream,COL.goldD,0,c1);mv('pr-c1');}
+  const c2=eob(clamp((tl-0.5)/0.4,0,1));
+  if(c2>0){card(960,600,420,260,{stroke:COL.red,scale:c2,fill:'rgba(192,57,43,0.18)'});
+    bigText('儿子的命',960,600,56,COL.red,COL.goldD,0,c2);mv('pr-c2');}
+  const c3=eob(clamp((tl-1.0)/0.4,0,1));
+  if(c3>0){card(1440,600,420,260,{stroke:COL.cream,scale:c3,fill:'rgba(243,234,211,0.1)'});
+    bigText('老婆也离了',1440,600,56,COL.cream,COL.goldD,0,c3);mv('pr-c3');}
+  // 箭头
+  for(let i=0;i<2;i++){const ax=720+i*480,ap=clamp((tl-0.2-i*0.5)/0.3,0,1);
+    ctx.save();ctx.strokeStyle=COL.gold;ctx.lineWidth=6;ctx.beginPath();
+    ctx.moveTo(ax-40,600);ctx.lineTo(ax+40,600);ctx.stroke();ctx.restore();mv('arrow'+i);}
+  if(tl>0.2)chip(960,180,'你看 一个决定',COL.gold,sc.s+0.2,t,60);
+  if(tl>1.5)chip(960,860,'搭上了所有',COL.red,sc.s+1.5,t,58);
+  mv('price');
+}
+
+// ============ S3 后面的历史全是推演 ============
+function scChain(sc,t,tl){
+  theme.r=176;theme.g=66;theme.b=45;theme.a=0.12;
+  const p=eob(clamp(tl/0.35,0,1));
+  bigText('全是推演',960,240,110,COL.gold,COL.ink,0,p);mv('ch-word');
+  // 时间线卡：曹昂 → 曹丕
+  const c1=eob(clamp((tl-0.3)/0.4,0,1));
+  if(c1>0){card(560,620,360,240,{stroke:COL.cream,scale:c1,fill:'rgba(255,255,255,0.06)'});
+    sprite('caorang',560,620,220,{alpha:0.85,scale:c1});mv('ch-ang');}
+  const c2=eob(clamp((tl-0.7)/0.4,0,1));
+  if(c2>0){card(1360,620,360,240,{stroke:COL.red,scale:c2,fill:'rgba(192,57,43,0.16)'});
+    sprite('caopi',1360,620,220,{alpha:0.85,scale:c2});mv('ch-pi');}
+  for(let i=0;i<2;i++){const ap=clamp((tl-0.5-i*0.4)/0.25,0,1);
+    ctx.save();ctx.strokeStyle=COL.gold;ctx.lineWidth=5;ctx.beginPath();
+    ctx.moveTo(700+i*600,620);ctx.lineTo(700+i*600+60,620);ctx.stroke();ctx.restore();mv('ch-ar'+i);}
+  chip(960,180,'如果曹昂不死',COL.cream,sc.s+0.1,t,58);
+  if(tl>0.6)chip(1360,860,'后来就轮不到曹丕',COL.red,sc.s+0.6,t,56);
+  mv('chain');
+}
+// 曹昂死后 曹操在曹丕和曹植之间选继承人 选了曹丕
+function scChooseHeir(sc,t,tl){
+  sprite('caocao',960,540,440,{alpha:0.97,scale:eob(clamp(tl/0.35,0,1))});mv('chh-cao');
+  sprite('caopi',520,700,400,{alpha:0.95,scale:eob(clamp((tl-0.3)/0.35,0,1))});mv('chh-pi');
+  sprite('caozhi',1400,700,400,{alpha:0.95,scale:eob(clamp((tl-0.45)/0.35,0,1))});mv('chh-zhi');
+  chip(520,300,'曹丕',COL.cream,sc.s+0.3,t,64);
+  chip(1400,300,'曹植',COL.cream,sc.s+0.45,t,64);
+  if(tl>0.7){const p=eob(clamp((tl-0.7)/0.35,0,1));
+    card(960,170,640,150,{stroke:COL.gold,scale:p,fill:'rgba(232,184,75,0.16)'});
+    bigText('选了曹丕',960,170,80,COL.gold,COL.goldD,0,p);mv('chh-choose');}
+  // 选中高亮
+  if(tl>0.7)glow(520,680,260,'rgba(232,184,75,A)',0.25+0.1*Math.sin(t*4));
+  mv('choose-heir');
+}
+// 曹丕逼汉献帝禅让 当了皇帝 / 曹丕传曹叡
+function scAbdicate(sc,t,tl){
+  sprite('xiandi',420,660,400,{alpha:0.85,scale:eob(clamp(tl/0.35,0,1)),rot:-0.06});mv('ab-xd');
+  sprite('edict',1000,620,520,{alpha:0.96,scale:eob(clamp((tl-0.25)/0.4,0,1)),rot:Math.sin(t*1.2)*0.03});mv('ab-edict');
+  sprite('caopi',1400,600,480,{alpha:0.98,scale:eob(clamp((tl-0.4)/0.35,0,1))});mv('ab-pi');
+  chip(420,230,'汉献帝',COL.cream,sc.s+0.1,t,56);
+  chip(960,180,'禅让诏书',COL.gold,sc.s+0.3,t,58);
+  if(tl>0.7){const p=eob(clamp((tl-0.7)/0.35,0,1));
+    bigText('当了皇帝',1400,240,80,COL.red,COL.ink,Math.sin(t*2)*0.02,p);mv('ab-king');}
+  if(tl>1.1)chip(960,850,'魏 曹丕',COL.gold,sc.s+1.1,t,56);
+  mv('abdicate');
+}
+// 曹叡托孤给曹爽和司马懿
+function scTuogu(sc,t,tl){
+  sprite('caorui',400,680,380,{alpha:0.95,scale:eob(clamp(tl/0.35,0,1))});mv('tg-rui');
+  sprite('caoshuang',960,700,380,{alpha:0.9,scale:eob(clamp((tl-0.3)/0.35,0,1))});mv('tg-shuang');
+  sprite('bed',1440,720,400,{alpha:0.92,scale:eob(clamp((tl-0.45)/0.35,0,1))});mv('tg-bed');
+  sprite('simayi',1500,600,380,{alpha:0.95,scale:eob(clamp((tl-0.5)/0.35,0,1))});mv('tg-yi');
+  chip(400,260,'曹叡',COL.cream,sc.s+0.05,t,58);
+  chip(960,300,'曹爽',COL.cream,sc.s+0.3,t,58);
+  chip(1500,220,'司马懿',COL.gold,sc.s+0.5,t,58);
+  if(tl>0.3)chip(960,180,'托孤',COL.red,sc.s+0.3,t,66);
+  if(tl>1.2){const p=eob(clamp((tl-1.2)/0.35,0,1));
+    chip(700,860,'曹爽是个二世祖',COL.cream,sc.s+1.2,t,56);
+    chip(1300,860,'逼得司马懿装病十年',COL.gold,sc.s+1.5,t,52);}
+  mv('tuogu');
+}
+// 司马懿这人 你让他装病 他就真能躺十年 他等的就是曹爽犯错
+function scSimaBed(sc,t,tl){
+  fadeRect(clamp(tl*0.4,0,0.3));
+  sprite('bed',600,700,460,{alpha:0.95,scale:eob(clamp(tl/0.4,0,1))});mv('sb-bed');
+  sprite('simayi',560,600,420,{alpha:0.98,scale:eob(clamp((tl-0.2)/0.4,0,1))});mv('sb-yi');
+  // 曹爽背影
+  sprite('caoshuang',1400,680,340,{alpha:0.6,scale:eob(clamp((tl-0.5)/0.4,0,1)),filter:'grayscale(0.5)'});mv('sb-shuang');
+  chip(960,180,'司马懿这人',COL.gold,sc.s+0.1,t,60);
+  if(tl>0.6){const p=eob(clamp((tl-0.6)/0.35,0,1));
+    bigText('你让他装病 他就真躺十年',960,420,72,COL.cream,COL.ink,0,p);mv('sb-word');}
+  if(tl>1.4)chip(960,860,'等的就是曹爽犯错',COL.red,sc.s+1.4,t,58);
+  mv('sima-bed');
+}
+// 公元二百四十九年 曹爽陪皇帝出城上坟 高平陵
+function scGaopingling(sc,t,tl){
+  theme.r=160;theme.g=50;theme.b=35;theme.a=0.16;
+  sprite('tomb',430,650,480,{alpha:0.95,scale:eob(clamp(tl/0.4,0,1))});mv('gp-tomb');
+  sprite('caoshuang',1000,700,360,{alpha:0.85,scale:eob(clamp((tl-0.3)/0.4,0,1))});mv('gp-shuang');
+  sprite('caorui',1330,740,300,{alpha:0.7,scale:eob(clamp((tl-0.45)/0.4,0,1)),filter:'grayscale(0.4)'});mv('gp-emperor');
+  chip(430,260,'高平陵',COL.gold,sc.s+0.1,t,66);
+  if(tl>0.3)chip(960,180,'公元二百四十九年',COL.cream,sc.s+0.3,t,58);
+  if(tl>0.7)chip(1100,500,'出城上坟',COL.cream,sc.s+0.7,t,54);
+  if(tl>1.1){const p=eob(clamp((tl-1.1)/0.4,0,1));
+    bigText('司马懿的病 突然好了',960,860,72,COL.red,COL.ink,0,p);mv('gp-heal');}
+  mv('gaopingling');
+}
+// 一夜之间拿下洛阳 夺了曹家的权
+function scCoup(sc,t,tl){
+  theme.r=160;theme.g=40;theme.b=30;theme.a=0.2;
+  sprite('gate',300,680,460,{alpha:0.85,scale:eob(clamp(tl/0.35,0,1))});mv('cp-gate');
+  sprite('simayi',1400,640,520,{alpha:0.98,scale:eob(clamp((tl-0.3)/0.4,0,1))});mv('cp-yi');
+  sprite('seal',1100,300,240,{alpha:0.95,rot:Math.sin(t*2)*0.1,scale:eob(clamp((tl-0.5)/0.4,0,1))});mv('cp-seal');
+  chip(960,180,'一夜之间 拿下洛阳',COL.red,sc.s+0.1,t,62);
+  if(tl>0.6)bigText('夺了曹家的权',960,460,96,COL.gold,COL.ink,Math.sin(t*2)*0.02,eob(clamp((tl-0.6)/0.35,0,1)));mv('cp-word');
+  if(tl>1.1)chip(1400,200,'司马懿',COL.cream,sc.s+1.1,t,58);
+  mv('coup');
+}
+// 再往后 司马师 司马昭 司马炎 一步一步 才有了晋朝
+function scJinDynasty(sc,t,tl){
+  sprite('simashi',420,760,340,{alpha:0.9,scale:eob(clamp(tl/0.35,0,1))});mv('jd-shi');
+  sprite('simazhao',960,760,340,{alpha:0.9,scale:eob(clamp((tl-0.2)/0.35,0,1))});mv('jd-zhao');
+  sprite('simayan',1500,760,340,{alpha:0.9,scale:eob(clamp((tl-0.4)/0.35,0,1))});mv('jd-yan');
+  chip(420,300,'司马师',COL.cream,sc.s+0.05,t,52);
+  chip(960,300,'司马昭',COL.cream,sc.s+0.2,t,52);
+  chip(1500,300,'司马炎',COL.cream,sc.s+0.4,t,52);
+  chip(960,180,'再往后 一步一步',COL.gold,sc.s+0.1,t,60);
+  if(tl>0.8){const p=eob(clamp((tl-0.8)/0.4,0,1));
+    card(960,920,460,140,{stroke:COL.gold,scale:p,fill:'rgba(232,184,75,0.18)'});
+    bigText('才有了晋朝',960,920,76,COL.gold,COL.goldD,0,p);mv('jd-word');}
+  mv('jin-dynasty');
+}
+// 这条线的起点就在宛城那一夜
+function scChainPoint(sc,t,tl){
+  sprite('camp',400,680,460,{alpha:0.85,scale:eob(clamp(tl/0.4,0,1))});mv('cpt-camp');
+  sprite('zou',1450,680,360,{alpha:0.7,scale:eob(clamp((tl-0.4)/0.4,0,1)),filter:'grayscale(0.5)'});mv('cpt-zou');
+  const p=eob(clamp((tl-0.25)/0.45,0,1));
+  bigText('起点 就在宛城那一夜',960,320,96,COL.gold,COL.ink,Math.sin(t*1.5)*0.02,p);mv('cpt-word');
+  // 环回箭头
+  ctx.save();ctx.strokeStyle=COL.red;ctx.lineWidth=7;ctx.setLineDash([14,10]);
+  ctx.beginPath();ctx.arc(960,600,220,Math.PI*0.7,Math.PI*1.6,false);ctx.stroke();ctx.restore();mv('cpt-ring');
+  if(tl>0.9)chip(960,850,'如果曹昂活着',COL.cream,sc.s+0.9,t,60);
+  mv('chain-point');
+}
+// 如果曹昂活着 ... 全换了人
+function scWhatIf(sc,t,tl){
+  fadeRect(clamp(tl*0.3,0,0.3));
+  const p=eob(clamp(tl/0.4,0,1));
+  bigText('曹丕上不了位',960,240,88,COL.grey,COL.ink,0,p);mv('wi-word1');
+  // 三张灰卡打叉
+  const names=[['caopi','曹丕'],['caorui','曹叡'],['caoshuang','曹爽']];
+  for(let i=0;i<3;i++){const cp=eob(clamp((tl-0.3-i*0.35)/0.4,0,1));
+    if(cp>0){card(480+i*480,620,300,340,{stroke:COL.grey,scale:cp,fill:'rgba(122,106,106,0.1)'});
+      sprite(names[i][0],480+i*480,600,200,{alpha:0.4*cp,scale:cp,filter:'grayscale(1)'});mv('wi'+i);
+      if(tl>0.5+i*0.35){ctx.save();ctx.strokeStyle=COL.red;ctx.lineWidth=9;ctx.beginPath();
+        ctx.moveTo(420+i*480,540);ctx.lineTo(540+i*480,700);ctx.stroke();ctx.restore();mv('wi-x'+i);}
+      bigText(names[i][1],480+i*480,820,44,COL.grey,COL.ink,0,cp);mv('wi-n'+i);}}
+  if(tl>1.4)chip(960,180,'全都没有了',COL.gold,sc.s+1.4,t,58);
+  if(tl>2.0){const q=eob(clamp((tl-2.0)/0.4,0,1));
+    bigText('司马懿熬的那些人 全换了人',960,870,64,COL.red,COL.ink,0,q);mv('wi-word2');}
+  mv('what-if');
+}
+// 当然 历史没有如果
+function scNoIf(sc,t,tl){
+  theme.r=150;theme.g=36;theme.b=28;theme.a=0.18;
+  glow(960,480,420,'rgba(192,57,43,A)',0.3);
+  const p=eob(clamp(tl/0.4,0,1));
+  bigText('历史没有如果',960,460,140,COL.red,COL.ink,Math.sin(t*1.5)*0.02,p);mv('ni-word');
+  card(560,860,360,120,{stroke:COL.cream,scale:eob(clamp((tl-0.5)/0.35,0,1)),fill:'rgba(255,255,255,0.06)'});
+  bigText('这段是推演',560,860,52,COL.cream,COL.goldD,0,eob(clamp((tl-0.5)/0.35,0,1)));mv('ni-fake');
+  card(1360,860,360,120,{stroke:COL.gold,scale:eob(clamp((tl-0.7)/0.35,0,1)),fill:'rgba(232,184,75,0.12)'});
+  bigText('不是史实',1360,860,52,COL.gold,COL.goldD,0,eob(clamp((tl-0.7)/0.35,0,1)));mv('ni-real');
+  mv('no-if');
+}
+
+// ============ S4 跟你有什么关系 ============
+function scRelateQ(sc,t,tl){
+  theme.r=232;theme.g=184;theme.b=75;theme.a=0.12;
+  sprite('edict',520,660,460,{alpha:0.92,scale:eob(clamp(tl/0.4,0,1)),rot:-0.08});mv('rq-edict');
+  sprite('caocao',1400,640,480,{alpha:0.9,scale:eob(clamp((tl-0.3)/0.4,0,1))});mv('rq-cao');
+  chip(960,180,'你可能会问',COL.cream,sc.s+0.1,t,60);
+  if(tl>0.5){const p=eob(clamp((tl-0.5)/0.4,0,1));
+    bigText('一个一千八百年前的八卦',960,320,80,COL.gold,COL.ink,0,p);mv('rq-word');}
+  if(tl>1.2){const q=eob(clamp((tl-1.2)/0.35,0,1));
+    bigText('跟我有什么关系',960,560,96,COL.red,COL.ink,0,q);mv('rq-q');}
+  if(tl>1.8){const r=eob(clamp((tl-1.8)/0.35,0,1));
+    card(960,840,420,140,{stroke:COL.gold,scale:r,fill:'rgba(232,184,75,0.2)'});
+    bigText('关系大了',960,840,70,COL.gold,COL.goldD,0,r);mv('rq-big');}
+  mv('relate-q');
+}
+// 第一 人生最贵的东西
+function scP1(sc,t,tl){
+  sprite('caocao',420,680,420,{alpha:0.85,scale:eob(clamp(tl/0.35,0,1))});mv('p1-cao');
+  sprite('caorang',960,680,400,{alpha:0.85,scale:eob(clamp((tl-0.15)/0.35,0,1))});mv('p1-ang');
+  sprite('simayi',1500,680,420,{alpha:0.85,scale:eob(clamp((tl-0.3)/0.35,0,1))});mv('p1-yi');
+  chip(960,180,'第一 人生最贵的东西',COL.gold,sc.s+0.1,t,64);
+  if(tl>0.5)bigText('不是你明码标价买的',960,400,72,COL.cream,COL.ink,0,eob(clamp((tl-0.5)/0.35,0,1)));mv('p1-price');
+  // 视角切换芯片
+  if(tl>0.9&&tl<2.5)chip(420,560,'曹操：就是娶个媳妇',COL.cream,sc.s+0.9,t,48);
+  if(tl>1.2&&tl<3.0)chip(960,560,'曹昂：是死',COL.red,sc.s+1.2,t,52);
+  if(tl>1.5)chip(1500,560,'司马懿：是机会',COL.gold,sc.s+1.5,t,48);
+  if(tl>1.0){const p=eob(clamp((tl-1.0)/0.35,0,1));
+    bigText('是你上头那一瞬间',960,870,64,COL.gold,COL.ink,0,p);mv('p1-top');}
+  mv('p1');
+}
+// 第二 你以为的小事 可能是别人人生的分岔路
+function scP2(sc,t,tl){
+  chip(960,180,'第二',COL.gold,sc.s+0.1,t,80);
+  // 分岔路
+  ctx.save();ctx.strokeStyle='rgba(232,184,75,0.7)';ctx.lineWidth=8;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(400,780);ctx.lineTo(900,780);ctx.lineTo(1400,560);ctx.moveTo(900,780);ctx.lineTo(1400,940);ctx.stroke();ctx.restore();mv('p2-road');
+  for(let i=0;i<3;i++){ctx.save();ctx.fillStyle='rgba(232,184,75,0.6)';
+    ctx.beginPath();ctx.arc(400+i*250,780,10,0,7);ctx.fill();ctx.restore();mv('p2-dot'+i);}
+  const p=eob(clamp((tl-0.3)/0.4,0,1));
+  bigText('你以为的小事',560,360,80,COL.cream,COL.ink,0,p);mv('p2-small');
+  if(tl>0.7){const q=eob(clamp((tl-0.7)/0.4,0,1));
+    bigText('可能是别人人生的分岔路',960,560,68,COL.gold,COL.ink,0,q);mv('p2-fork');}
+  if(tl>1.3)chip(560,860,'你随手一个决定',COL.cream,sc.s+1.3,t,54);
+  if(tl>1.7)chip(1400,500,'在别人那 就是一辈子',COL.red,sc.s+1.7,t,52);
+  mv('p2');
+}
+// 第三 多米诺骨牌
+function scP3(sc,t,tl){
+  chip(960,180,'第三',COL.gold,sc.s+0.1,t,80);
+  // 多米诺倒下动画（从右向左）
+  const n=7;
+  for(let i=0;i<n;i++){
+    const dx=480+i*160, h=300;
+    const fall=clamp((tl-0.3-(n-1-i)*0.18)/0.25,0,1);
+    const ang=fall*Math.PI/2;
+    ctx.save();ctx.translate(dx,760);ctx.rotate(ang);
+    ctx.fillStyle=i===3?COL.red:'rgba(232,184,75,0.85)';
+    ctx.fillRect(-10,-h,20,h);ctx.restore();mv('domino'+i);
+    if(fall>0)ctx.save();ctx.globalAlpha=0.15;ctx.fillStyle=COL.gold;ctx.fillRect(dx-30,760,60,4);ctx.restore();
+  }
+  const p=eob(clamp((tl-0.35)/0.35,0,1));
+  bigText('历史就像多米诺骨牌',960,340,80,COL.cream,COL.ink,0,p);mv('p3-domino-word');
+  if(tl>1.2)bigText('你以为只是推倒了一块',560,860,60,COL.cream,COL.ink,0,eob(clamp((tl-1.2)/0.3,0,1)));mv('p3-one');
+  if(tl>1.7){const q=eob(clamp((tl-1.7)/0.35,0,1));
+    card(1400,850,420,120,{stroke:COL.red,scale:q,fill:'rgba(192,57,43,0.2)'});
+    bigText('其实倒了一整排',1400,850,56,COL.red,COL.goldD,0,q);mv('p3-all');}
+  if(tl>2.3)chip(960,580,'曹操推倒的那一块 叫曹昂',COL.gold,sc.s+2.3,t,56);
+  mv('p3');
+}
+// 结尾
+function scEnding(sc,t,tl){
+  theme.r=232;theme.g=184;theme.b=75;theme.a=0.12;
+  glow(960,540,430,'rgba(232,184,75,A)',0.32);
+  sprite('caocao',960,620,520,{alpha:0.96,scale:eob(clamp(tl/0.4,0,1))});mv('end-cao');
+  if(tl>0.4)bigText('行 不扯远了',960,280,84,COL.cream,COL.ink,0,eob(clamp((tl-0.4)/0.3,0,1)));mv('end-line');
+  if(tl>1.0){const s=eob(clamp((tl-1.0)/0.4,0,1));
+    bigText('我是艾伦 遛狗去了',960,860,64,COL.gold,COL.ink,0,s);mv('end-sig');}
+  if(tl>1.8)chip(960,150,'拜了个拜',COL.gold,sc.s+1.8,t,60);
+  mv('ending');
+}
+
+// ---------- 主渲染 ----------
+function render(t){
+  QC.moving.clear();QC.acts=[];QC.textRects=[];QC.subRect=null;QC.fgRects=[];
+  ctx.setTransform(1,0,0,1,0,0);
+  const sc=sceneByT(t);
+  const tl=t-sc.s;
+  // 主题色分段
+  let tr=232,tg=184,tb=75,ta=0.12;
+  if(t>=13.60&&t<58.10){tr=192;tg=57;tb=43;ta=0.10;}
+  else if(t>=58.10&&t<79.10){tr=232;tg=184;tb=75;ta=0.10;}
+  else if(t>=79.10&&t<107.50){tr=123;tg=36;tb=28;ta=0.14;}
+  else if(t>=107.50&&t<155.20){tr=176;tg=66;tb=45;ta=0.12;}
+  else if(t>=155.20){tr=232;tg=184;tb=75;ta=0.12;}
+  theme.r=tr;theme.g=tg;theme.b=tb;theme.a=ta;
+  bgBase(t);bgDust(t);bgTheme(t);bgStage(t);
+  try{
+    ctx.save();
+    const name=sc.type;
+    if(name==='hook-widow')scHookWidow(sc,t,tl);
+    else if(name==='hook-rewrite')scHookRewrite(sc,t,tl);
+    else if(name==='hook-marry')scHookMarry(sc,t,tl);
+    else if(name==='hook-battle')scHookBattle(sc,t,tl);
+    else if(name==='hook-how')scHookHow(sc,t,tl);
+    else if(name==='ad197')scAd197(sc,t,tl);
+    else if(name==='zhangxiu-who')scZhangxiuWho(sc,t,tl);
+    else if(name==='zhangji-dead')scZhangjiDead(sc,t,tl);
+    else if(name==='bloodless')scBloodless(sc,t,tl);
+    else if(name==='sees-zou')scSeesZou(sc,t,tl);
+    else if(name==='take-zou')scTakeZou(sc,t,tl);
+    else if(name==='shame')scShame(sc,t,tl);
+    else if(name==='revolt')scRevolt(sc,t,tl);
+    else if(name==='lose-bad')scLoseBad(sc,t,tl);
+    else if(name==='dianwei-hold')scDianweiHold(sc,t,tl);
+    else if(name==='dianwei-fall')scDianweiFall(sc,t,tl);
+    else if(name==='ang-mount')scAngMount(sc,t,tl);
+    else if(name==='ang-fall')scAngFall(sc,t,tl);
+    else if(name==='escape')scEscape(sc,t,tl);
+    else if(name==='ang-heir')scAngHeir(sc,t,tl);
+    else if(name==='ding-raises')scDingRaises(sc,t,tl);
+    else if(name==='caocao-trains')scCaocaoTrains(sc,t,tl);
+    else if(name==='ages')scAges(sc,t,tl);
+    else if(name==='ang-future')scAngFuture(sc,t,tl);
+    else if(name==='night-lost')scNightLost(sc,t,tl);
+    else if(name==='ding-fury')scDingFury(sc,t,tl);
+    else if(name==='beg')scBeg(sc,t,tl);
+    else if(name==='beg-final')scBegFinal(sc,t,tl);
+    else if(name==='regret')scRegret(sc,t,tl);
+    else if(name==='price')scPrice(sc,t,tl);
+    else if(name==='chain')scChain(sc,t,tl);
+    else if(name==='choose-heir')scChooseHeir(sc,t,tl);
+    else if(name==='abdicate')scAbdicate(sc,t,tl);
+    else if(name==='tuogu')scTuogu(sc,t,tl);
+    else if(name==='sima-bed')scSimaBed(sc,t,tl);
+    else if(name==='gaopingling')scGaopingling(sc,t,tl);
+    else if(name==='coup')scCoup(sc,t,tl);
+    else if(name==='jin-dynasty')scJinDynasty(sc,t,tl);
+    else if(name==='chain-point')scChainPoint(sc,t,tl);
+    else if(name==='what-if')scWhatIf(sc,t,tl);
+    else if(name==='no-if')scNoIf(sc,t,tl);
+    else if(name==='relate-q')scRelateQ(sc,t,tl);
+    else if(name==='p1')scP1(sc,t,tl);
+    else if(name==='p2')scP2(sc,t,tl);
+    else if(name==='p3')scP3(sc,t,tl);
+    else if(name==='ending')scEnding(sc,t,tl);
+    ctx.restore();
+  }catch(e){window.__err=(window.__err||[]);if(window.__err.length<20)window.__err.push(t.toFixed(2)+': '+String(e));ctx.restore();}
+  // 转场
+  for(const kk in TRANS){const c=+kk;const dt=t-c;if(dt<0||dt>0.4)continue;
+    const ty=TRANS[kk][0],col=TRANS[kk][1];
+    if(ty==='dip')dip(t,c);else if(ty==='veil')veil(t,c,col);else if(ty==='softWipe')softWipe(t,c,col);}
+  // 字幕
+  const sub=subAt(t);
+  if(sub)subBar(sub);
+  // 水印+进度
+  ctx.save();ctx.font='500 32px "Microsoft YaHei"';ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('@徐艾伦',W-44,34);ctx.restore();
+  const pr=clamp(t/SB.total,0,1);
+  ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(0,H-6,W,6);
+  ctx.fillStyle=COL.gold;ctx.fillRect(0,H-6,W*pr,6);mv('progress');
+  // 淡出
+  if(t>SB.total-0.4){ctx.fillStyle='#000';ctx.globalAlpha=(t-(SB.total-0.4))/0.4;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+  QC.moving.add('watermark');QC.acts.push('scene:'+sc.type);
+  if(sc.s>0)QC.acts.push('cut:'+sc.type);
+}
+window.__ready=function(){return loaded>=need;};
+window.renderFrame=function(i){render(i/30);return {t:i/30,moving:[...QC.moving],acts:QC.acts,textRects:QC.textRects,subRect:QC.subRect,fgRects:QC.fgRects};};
+render(0);
+</script></body></html>

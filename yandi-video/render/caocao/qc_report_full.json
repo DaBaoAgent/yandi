@@ -1,0 +1,428 @@
+{
+ "total": 187,
+ "frames": 5610,
+ "scenes": [
+  {
+   "s": 0,
+   "e": 1.5,
+   "type": "hook-widow",
+   "minMoving": 22,
+   "maxTextCov": 21.25,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 1.5,
+   "e": 4.2,
+   "type": "hook-rewrite",
+   "minMoving": 7,
+   "maxTextCov": 9.6,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 4.2,
+   "e": 7.8,
+   "type": "hook-marry",
+   "minMoving": 11,
+   "maxTextCov": 8.34,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 7.8,
+   "e": 10.5,
+   "type": "hook-battle",
+   "minMoving": 8,
+   "maxTextCov": 9.17,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 10.5,
+   "e": 13.6,
+   "type": "hook-how",
+   "minMoving": 9,
+   "maxTextCov": 10.36,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 13.6,
+   "e": 15.2,
+   "type": "ad197",
+   "minMoving": 8,
+   "maxTextCov": 7.52,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 15.2,
+   "e": 18.5,
+   "type": "zhangxiu-who",
+   "minMoving": 9,
+   "maxTextCov": 6.18,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 18.5,
+   "e": 20.6,
+   "type": "zhangji-dead",
+   "minMoving": 9,
+   "maxTextCov": 8.76,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 20.6,
+   "e": 24.3,
+   "type": "bloodless",
+   "minMoving": 11,
+   "maxTextCov": 7.01,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 24.3,
+   "e": 27.9,
+   "type": "sees-zou",
+   "minMoving": 10,
+   "maxTextCov": 5.69,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 27.9,
+   "e": 29.4,
+   "type": "take-zou",
+   "minMoving": 11,
+   "maxTextCov": 7.96,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 29.4,
+   "e": 34.6,
+   "type": "shame",
+   "minMoving": 10,
+   "maxTextCov": 9.7,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 34.6,
+   "e": 37,
+   "type": "revolt",
+   "minMoving": 10,
+   "maxTextCov": 8.17,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 37,
+   "e": 39.9,
+   "type": "lose-bad",
+   "minMoving": 10,
+   "maxTextCov": 8.68,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 39.9,
+   "e": 43.9,
+   "type": "dianwei-hold",
+   "minMoving": 15,
+   "maxTextCov": 6.06,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 43.9,
+   "e": 46.6,
+   "type": "dianwei-fall",
+   "minMoving": 11,
+   "maxTextCov": 8.51,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 46.6,
+   "e": 50.9,
+   "type": "ang-mount",
+   "minMoving": 10,
+   "maxTextCov": 7.4,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 50.9,
+   "e": 55.1,
+   "type": "ang-fall",
+   "minMoving": 12,
+   "maxTextCov": 7.56,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 55.1,
+   "e": 58.1,
+   "type": "escape",
+   "minMoving": 15,
+   "maxTextCov": 8.45,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 58.1,
+   "e": 61.5,
+   "type": "ang-heir",
+   "minMoving": 8,
+   "maxTextCov": 7.43,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 61.5,
+   "e": 66.6,
+   "type": "ding-raises",
+   "minMoving": 11,
+   "maxTextCov": 8.2,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 66.6,
+   "e": 70.8,
+   "type": "caocao-trains",
+   "minMoving": 11,
+   "maxTextCov": 8.4,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 70.8,
+   "e": 73.7,
+   "type": "ages",
+   "minMoving": 10,
+   "maxTextCov": 6.57,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 73.7,
+   "e": 79.1,
+   "type": "ang-future",
+   "minMoving": 9,
+   "maxTextCov": 7.49,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 79.1,
+   "e": 82.4,
+   "type": "night-lost",
+   "minMoving": 9,
+   "maxTextCov": 8.71,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 82.4,
+   "e": 84.9,
+   "type": "ding-fury",
+   "minMoving": 10,
+   "maxTextCov": 9.66,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 84.9,
+   "e": 89.8,
+   "type": "beg",
+   "minMoving": 9,
+   "maxTextCov": 5.94,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 89.8,
+   "e": 96,
+   "type": "beg-final",
+   "minMoving": 10,
+   "maxTextCov": 8.98,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 96,
+   "e": 102.6,
+   "type": "regret",
+   "minMoving": 11,
+   "maxTextCov": 11.08,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 102.6,
+   "e": 107.5,
+   "type": "price",
+   "minMoving": 9,
+   "maxTextCov": 8.33,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 107.5,
+   "e": 112.1,
+   "type": "chain",
+   "minMoving": 10,
+   "maxTextCov": 8.66,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 112.1,
+   "e": 115.2,
+   "type": "choose-heir",
+   "minMoving": 10,
+   "maxTextCov": 6.14,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 115.2,
+   "e": 118.2,
+   "type": "abdicate",
+   "minMoving": 10,
+   "maxTextCov": 6.54,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 118.2,
+   "e": 122.9,
+   "type": "tuogu",
+   "minMoving": 11,
+   "maxTextCov": 8.7,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 122.9,
+   "e": 127.6,
+   "type": "sima-bed",
+   "minMoving": 10,
+   "maxTextCov": 9.48,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 127.6,
+   "e": 134.7,
+   "type": "gaopingling",
+   "minMoving": 10,
+   "maxTextCov": 9.3,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 134.7,
+   "e": 140.4,
+   "type": "coup",
+   "minMoving": 11,
+   "maxTextCov": 9.16,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 140.4,
+   "e": 144.2,
+   "type": "chain-point",
+   "minMoving": 11,
+   "maxTextCov": 9.4,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 144.2,
+   "e": 151.8,
+   "type": "what-if",
+   "minMoving": 8,
+   "maxTextCov": 10.58,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 151.8,
+   "e": 155.2,
+   "type": "no-if",
+   "minMoving": 10,
+   "maxTextCov": 11.62,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 155.2,
+   "e": 160.6,
+   "type": "relate-q",
+   "minMoving": 9,
+   "maxTextCov": 14.37,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 160.6,
+   "e": 171.2,
+   "type": "p1",
+   "minMoving": 11,
+   "maxTextCov": 14.05,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 171.2,
+   "e": 177.4,
+   "type": "p2",
+   "minMoving": 12,
+   "maxTextCov": 12.86,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 177.4,
+   "e": 183.8,
+   "type": "p3",
+   "minMoving": 16,
+   "maxTextCov": 13.52,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 183.8,
+   "e": 187,
+   "type": "ending",
+   "minMoving": 9,
+   "maxTextCov": 6.91,
+   "pure": false,
+   "ok": true
+  }
+ ],
+ "issues": [],
+ "textCov": {
+  "max": 21.25,
+  "mean": 8,
+  "over30": 0
+ },
+ "moving": {
+  "min": 7,
+  "mean": 13.4,
+  "under5": 0
+ },
+ "motionPoints": {
+  "windows": 94,
+  "withNew": 94,
+  "emptyAt": []
+ },
+ "pureRatio": 0
+}

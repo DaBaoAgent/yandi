@@ -1,5 +1,7 @@
 # 炎帝 · 女娲系列 · 代码动画视频流水线
 
+> 管线代号：**piying**（皮影 / 剪影卡片风）。2026-10-29 用户命名，目录 `render/piying/`（原 `render/yandi/`）。
+
 用 Playwright + Canvas 逐帧渲染 + ffmpeg 合成 16:9 历史神话口播视频，不依赖文生图 / 图生视频。
 完整生产规格见技能：`.workbuddy/skills/yandi-video-spec/SKILL.md`。
 
@@ -9,7 +11,9 @@
 |---|---|---|---|---|
 | 1 | 炎帝 | 385.5s | 98 镜 / 320 字幕 / 163 音效点 | 已交付（新规格重制） |
 | 2 | 女娲 | 427.2s | 100 镜 / 336 字幕 / 144 音效点 | 已交付 |
-| 3 | 帝辛 | — | — | 待开工 |
+| 3 | 波斯湾伊甸园 | — | — | 已交付 |
+| 4 | 周幽王 | 180.0s | 41 镜 / 154 字幕 / 40 音效点 | 已交付 |
+| 5 | （下一集） | — | — | 待开工 |
 
 ---
 
@@ -42,7 +46,7 @@
 | S6 | 炎与陶器 | 298.4-329.1s | 概念+剪影（石头烧水→制陶→炎＝两个火） |
 | S7 | 跟你有关 | 329.1-385.5s | 概念+收尾（四连问→遗产→唯一未中断文明→片尾卡） |
 
-管线：`render/yandi/`（gen_full_yandi → page_full_yandi → qc → audit 四查 → capture → sfx → BGM → 封装）。
+管线：`render/piying/`（gen_full_yandi → page_full_yandi → qc → audit 四查 → capture → sfx → BGM → 封装）。
 
 ---
 
@@ -152,7 +156,7 @@ out/<序号> <标题>/
 ## 目录（双管线）
 
 ```
-yandi-video/render/yandi/     炎帝线（后续剧集模板）
+yandi-video/render/piying/     炎帝线（后续剧集模板）
 ├── gen_sample_yandi.js / gen_full_yandi.js   样片/全片分镜
 ├── page_yandi.html / page_full_yandi.html    渲染页
 ├── capture_yandi.js / capture_full_yandi.js  逐帧捕获
@@ -252,10 +256,19 @@ node qc_full.js                        # 8 段全 PASS 才交付
 - `rm -rf frames/` 会被安全拦截，捕获脚本覆写同名帧即可
 - npm 安装需镜像：`--registry=https://registry.npmmirror.com`
 
+### 周幽王新增踩坑（第4集，2026-10-27）
+
+- **人物立绘必须等比绘制**：素材全是竖版 1024×1536，`sprite()` 若强制正方形会压扁人物。默认 `w=h*naturalWidth/naturalHeight`，不要写 `drawImage(im,-h/2,-h/2,h,h)`。
+- **字幕时间戳必须用 whisper 词级转写原生时间**，不能手填估算。流程：faster-whisper 词级转写 → 对照口播稿逐句校准 start/end → 写回 subs。手填的时间轴到65秒后必然漂移。
+- **场景边界必须收紧到字幕首尾**：scenes 的 s/e 要贴合它覆盖的 subs 的首条 start / 末条 end，否则场景切了字幕还停在上一句。用 `_tighten.js` 自动收紧。
+- **背景默认用 bg10 群峰叠嶂**（古代题材通用），不要用代码画宫殿/黑块。运镜参数照搬炎帝：横移±42px/52s、推拉1.09±0.03/38s 错拍交替。
+- **whisper 错别字修正表**：包四→褒姒、能火→烽火、包国→褒国、身後→申后、移救→宜臼、伯福→伯服、深侯→申侯、犬荣→犬戎、離山→骊山、爐走→掳走、隱狼入世→引狼入室、紅烟→红颜、墨西→妺喜、打击→妲己、白了个白→拜了个拜。
+- **样片先行**：新一集先截前20秒样片验收（人物比例/字幕对齐/背景），验收通过再跑全片5400帧。不要直接跑全片再返工。
+
 ## 工作区清理（每集交付后）
 
 ```bash
-cd yandi-video/render/yandi
+cd yandi-video/render/piying
 node clean_workspace.js            # dry-run
 node clean_workspace.js --apply    # 执行（可释放 6.7GB/两集）
 ```

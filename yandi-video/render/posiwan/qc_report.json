@@ -1,0 +1,86 @@
+{
+ "total": 10.42,
+ "frames": 313,
+ "scenes": [
+  {
+   "s": 0,
+   "e": 1.17,
+   "type": "statues-hook",
+   "minMoving": 15,
+   "maxTextCov": 3.57,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 1.17,
+   "e": 2.66,
+   "type": "pope-robe",
+   "minMoving": 17,
+   "maxTextCov": 5.64,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 2.66,
+   "e": 3.6,
+   "type": "fish-skin",
+   "minMoving": 20,
+   "maxTextCov": 3.52,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 3.6,
+   "e": 4.93,
+   "type": "sumer-time",
+   "minMoving": 16,
+   "maxTextCov": 7.85,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 4.93,
+   "e": 6.76,
+   "type": "call-god",
+   "minMoving": 10,
+   "maxTextCov": 5.2,
+   "pure": false,
+   "ok": true
+  },
+  {
+   "s": 6.76,
+   "e": 8.62,
+   "type": "how-from",
+   "minMoving": 12,
+   "maxTextCov": 11.19,
+   "pure": true,
+   "ok": true
+  },
+  {
+   "s": 8.62,
+   "e": 10.42,
+   "type": "oannes-reveal",
+   "minMoving": 26,
+   "maxTextCov": 7.74,
+   "pure": false,
+   "ok": true
+  }
+ ],
+ "issues": [],
+ "textCov": {
+  "max": 11.19,
+  "mean": 6.2,
+  "over30": 0
+ },
+ "moving": {
+  "min": 10,
+  "mean": 18.1,
+  "under5": 0
+ },
+ "motionPoints": {
+  "windows": 6,
+  "withNew": 6,
+  "emptyAt": []
+ },
+ "pureRatio": 17.9
+}

@@ -10,14 +10,16 @@ __pycache__/
 
 # ===== 第三方运行时（体积大，见独立仓库 DaBaoAgent/gpt-sovits）=====
 vendor/
+# 020_曹操 目录内是 mg-styles-15 整套环境副本（node_modules/.git/Chrome 缓存），等同 vendor
+output/020_曹操/
 
-# ===== 逐帧渲染中间产物（约 5.7 GB / 38645 张 JPG）=====
-frames/
-frames_full/
-frames_nuwa/
-frames_yandi_full/
-frames_yandi_sample/
+# ===== 逐帧渲染中间产物（帧序列一律不入库，全前缀覆盖）=====
+frames*/
 capture_frames/
+
+# ===== 旧工作区产物与临时探测输出 =====
+/out/
+output/_tmp_*/
 
 # ===== 媒体产物：成片 / 草稿 / 混音均不入库 =====
 *.mp4

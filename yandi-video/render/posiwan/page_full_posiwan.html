@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#000;}</style></head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script src="posiwan_full_sb.js"></script>
+<script>
+// ================= 001 波斯湾伊甸园 全片渲染页（中东色板 + 通用引擎 + 题材专属） =================
+const W=1920,H=1080;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const SB=window.SB;
+const COL={bg:'#0E1518',bgA:'#162125',gold:'#E8B84B',goldD:'#9A7524',copper:'#B87333',copperD:'#6E4220',
+ teal:'#4E8B8B',tealD:'#1F4040',fish:'#7FA8C9',fishD:'#36577A',sand:'#D9B382',terracotta:'#C96B3D',
+ cream:'#F3EAD3',red:'#D9534F',redD:'#8E2F2C',white:'#FFFFFF',grey:'#7A8288',ink:'#0A0F11'};
+
+// ---------- 资产（001 波斯湾素材包 v1，1254正方形RGBA） ----------
+const AB='D:/@kaifa/yandi/output/001_波斯湾伊甸园_口播稿+配音/波斯湾伊甸园故事常用素材_透明PNG_v1/';
+const ASSETS={
+ 'oannes':AB+'人物/欧安涅斯.png','priest':AB+'人物/苏美尔祭司雕像.png','linguist':AB+'人物/语言学家.png',
+ 'ross':AB+'人物/罗斯考古学家.png','enki':AB+'人物/恩基.png','farmer':AB+'人物/苏美尔农夫.png',
+ 'boat':AB+'道具/古航海船.png','plow':AB+'道具/苏美尔木犁.png','seedbasket':AB+'道具/播种篮.png',
+ 'ziggurat':AB+'道具/金字形神塔.png','kinglist':AB+'道具/苏美尔王表石碑.png','ark':AB+'道具/洪水方舟.png',
+ 'spring':AB+'道具/沙漠泉眼.png','ice':AB+'道具/冰盖.png','kish':AB+'道具/基什山.png',
+ 'hood':AB+'道具/鱼皮兜帽.png','dna':AB+'道具/DNA双螺旋.png','rivers':AB+'道具/四条大河.png',
+};
+const BGIMG='D:/@kaifa/yandi/output/001_波斯湾伊甸园_口播稿+配音/背景图_v1/bg01_persian_gulf.png';
+const IMGS={};let loaded=0;const need=Object.keys(ASSETS).length+1;
+function fileUrl(p){return 'file:///'+p.split('/').map(encodeURIComponent).join('/');}
+for(const k in ASSETS){const im=new Image();im.onload=()=>{loaded++;};im.onerror=()=>{loaded++;console.log('MISS',k);};im.src=fileUrl(ASSETS[k]);IMGS[k]=im;}
+const bgIm=new Image();bgIm.onload=()=>{loaded++;};bgIm.onerror=()=>{loaded++;};bgIm.src=fileUrl(BGIMG);
+function img(k){return (IMGS[k]&&IMGS[k].complete&&IMGS[k].naturalWidth)?IMGS[k]:null;}
+function sprite(k,x,y,h,o){o=o||{};const im=img(k);if(!im)return;ctx.save();
+  ctx.globalAlpha=o.alpha==null?1:o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);
+  if(o.flip)ctx.scale(-1,1);const s=o.scale||1;ctx.scale(s,s);
+  if(o.filter&&ctx.filter!==undefined)ctx.filter=o.filter;
+  ctx.imageSmoothingEnabled=false;ctx.drawImage(im,-h/2,-h/2,h,h);ctx.restore();
+  QC.fgRects.push([x-h/2*s,y-h/2*s,h*s,h*s]);}
+
+// ---------- QC 仪表 ----------
+const QC={moving:new Set(),acts:[],textRects:[],subRect:null,fgRects:[]};
+function mv(id){QC.moving.add(id);}
+function tRect(x,y,w,h){QC.textRects.push([x,y,w,h]);}
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+function eob(t){if(t<=0)return 0;const c=1.70158;const x=t-1;return 1+(c+1)*x*x*x+c*x*x}
+function eoe(t){if(t<=0)return 0;return t>=1?1:1-Math.pow(2,-10*t)}
+function eio(t){if(t<=0)return 0;return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function rnd(seed){const x=Math.sin(seed*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+
+// ---------- 背景四层 ----------
+let theme={r:184,g:115,b:51,a:0.10};
+function camAt(t){
+  const panX=Math.sin(t*Math.PI/26)*42;
+  const panY=Math.sin(t*Math.PI/47+1.2)*14;
+  const zoom=1.09+Math.cos(t*Math.PI/19)*0.03;
+  return {panX,panY,zoom};
+}
+function bgBase(t){
+  if(bgIm.complete&&bgIm.naturalWidth){
+    const ir=bgIm.naturalWidth/bgIm.naturalHeight,rr=W/H;
+    let sw,sh,sx,sy;
+    if(ir>rr){sh=bgIm.naturalHeight;sw=sh*rr;sx=(bgIm.naturalWidth-sw)/2;sy=0;}
+    else{sw=bgIm.naturalWidth;sh=sw/rr;sx=0;sy=(bgIm.naturalHeight-sh)/2;}
+    const c=camAt(t),m=(c.zoom-1)/2;
+    const ox=clamp(c.panX,-W*m,W*m),oy=clamp(c.panY,-H*m,H*m);
+    ctx.save();ctx.translate(W/2+ox,H/2+oy);ctx.scale(c.zoom,c.zoom);ctx.translate(-W/2,-H/2);
+    ctx.drawImage(bgIm,sx,sy,sw,sh,0,0,W,H);ctx.restore();
+    mv('bg-cam');
+  }else{ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);}
+}
+function bgParticles(t){
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  for(let i=0;i<44;i++){const px=(rnd(i)*W+t*(14+rnd(i+7)*26))%W;const py=(rnd(i+3)*H+t*(8+rnd(i+11)*18))%H;
+    const s=1+rnd(i+5)*2.4;ctx.fillRect(px,py,s,s);}
+  mv('bg-particles');
+}
+function bgTheme(t){
+  const pulse=0.75+0.25*Math.sin(t*0.8);
+  ctx.fillStyle='rgba('+theme.r+','+theme.g+','+theme.b+','+(theme.a*pulse).toFixed(3)+')';
+  ctx.fillRect(0,0,W,H);
+  mv('bg-theme');
+}
+function bgStage(t,stage){
+  for(let L=0;L<2;L++){
+    const amp=30+L*20,yb=H*(L===0?0.78:0.87),spd=(L===0?8:18);
+    ctx.fillStyle=L===0?'rgba(31,64,64,0.40)':'rgba(10,15,17,0.85)';
+    ctx.beginPath();ctx.moveTo(0,H);
+    for(let x=0;x<=W;x+=24){const y=yb+Math.sin((x+t*spd)*0.0016+L*2.1)*amp+Math.sin((x+t*spd*0.6)*0.004+L)*amp*0.35;ctx.lineTo(x,y);}
+    ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  }
+  const sea=stage==='sea';
+  const wg=sea?0.6:0.22;
+  ctx.strokeStyle='rgba(127,168,201,'+wg+')';ctx.lineWidth=3;
+  const nL=sea?7:4;
+  for(let i=0;i<nL;i++){const yy=H-190+i*(sea?26:34);ctx.beginPath();
+    for(let x=0;x<=W;x+=32){ctx.lineTo(x,yy+Math.sin(x*0.012+t*(sea?3.2+i*0.4:2.2+i*0.5)+i)* (sea?9:6));}ctx.stroke();}
+  mv('bg-stage');
+}
+
+// ---------- 文字 ----------
+function bigText(text,x,y,size,color,outline,rot,scale,align){
+  if(typeof text!=='string'){window.__badText=(window.__badText||[]);if(window.__badText.length<10)window.__badText.push(String(text));text=String(text);}
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);if(scale)ctx.scale(scale,scale);
+  ctx.font='900 '+size+'px "Microsoft YaHei"';ctx.textAlign=align||'center';ctx.textBaseline='middle';
+  const tw=ctx.measureText(text).width;
+  const ax=align==='left'?0:(align==='right'?-tw/2:0);
+  if(outline){ctx.lineWidth=size*0.12;ctx.strokeStyle=outline;ctx.lineJoin='round';ctx.strokeText(text,ax,0);}
+  ctx.fillStyle=color;ctx.fillText(text,ax,0);ctx.restore();
+  tRect(x-(align==='left'?0:tw/2)-size*0.1,y-size*0.62,tw+size*0.2,size*1.24);
+}
+// ---------- 字幕（底部条 + 关键词金/蓝高亮） ----------
+const ACC_KEYS=['雕像','教皇','鱼皮','四千年前','苏美尔','神','半人半鱼','怪物','波斯湾','欧安涅斯','盖庙','法律','农业','几何',
+ '绿洲','迪尔蒙','巴林','幽灵人群','尼安德特','伊甸园','冰盖','海平面','泉眼','温盐环流','新仙女木','洪水','基什山','恩基','方舟',
+ '鱼头装','王表','干旱','前文明','高等文明','一百二十米','三十五米','七十八倍','七十米','三百年','六万年前','五万年','四条大河'];
+const ACC_KEYS2=['半人半鱼','鱼皮','鱼头装','温盐环流','冰盖','海平面','幽灵人群'];
+function subBar(text){
+  ctx.save();
+  ctx.font='900 64px "Microsoft YaHei"';
+  const tw=ctx.measureText(text).width;
+  const bx=W/2-tw/2-38,by=H-156,bw=tw+76,bh=100;
+  ctx.fillStyle='rgba(0,0,0,0.62)';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle=COL.gold;ctx.fillRect(bx,by,7,bh);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=9;ctx.strokeStyle='#000';
+  const acc2=ACC_KEYS2.find(k=>text.includes(k));
+  const acc=acc2||ACC_KEYS.find(k=>text.includes(k));
+  let x=W/2-tw/2;
+  for(const chr of text){
+    const w=ctx.measureText(chr).width;
+    const inAcc=acc&&acc.includes(chr);
+    ctx.strokeText(chr,x+w/2,by+bh/2+3);
+    ctx.fillStyle=inAcc?(acc2?COL.fish:COL.gold):'#fff';
+    ctx.fillText(chr,x+w/2,by+bh/2+3);
+    x+=w;
+  }
+  ctx.restore();
+  QC.subRect=[bx,by,bw,bh];tRect(bx,by,bw,bh);
+}
+function card(x,y,w,h,o){o=o||{};ctx.save();
+  if(o.alpha!=null)ctx.globalAlpha=o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);const s=o.scale||1;ctx.scale(s,s);
+  ctx.fillStyle=o.fill||'rgba(255,255,255,0.055)';ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.fill();
+  if(o.stroke){ctx.strokeStyle=o.stroke;ctx.lineWidth=o.lw||3;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.stroke();}
+  ctx.restore();
+  if(!o.noQC)QC.fgRects.push([x-w/2*s,y-h/2*s,w*s,h*s]);}
+function chip(x,y,text,color,t0,t,size){const p=eob(clamp((t-t0)/0.35,0,1));if(p<=0)return;
+  ctx.save();ctx.font='900 '+(size||52)+'px "Microsoft YaHei"';const tw=ctx.measureText(text).width;
+  card(x,y,tw+56,size+34,{stroke:color,lw:3,scale:p,fill:'rgba(255,255,255,0.07)'});
+  bigText(text,x,y,size||52,color,null,0,p);mv('chip-'+text+t0);ctx.restore();}
+function glow(x,y,r,color,a){ctx.save();const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,color.replace('A',a.toFixed(3)));g.addColorStop(1,color.replace('A','0'));
+  ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore();}
+
+// ---------- 逆光剪影 ----------
+function glowRim(x,y,r,t,col){col=col||'rgba(232,184,75,';
+  const pr=r*(1+0.03*Math.sin(t*2.2));
+  ctx.save();const g=ctx.createRadialGradient(x,y,pr*0.2,x,y,pr);
+  g.addColorStop(0,col+'0.34)');g.addColorStop(1,col+'0)');
+  ctx.fillStyle=g;ctx.fillRect(x-pr,y-pr,pr*2,pr*2);ctx.restore();mv('rim'+(x|0));}
+function silSprite(k,x,y,h,t,ph,o){o=o||{};glowRim(x,y+h*0.25,h*0.75,t,o.glow);
+  sprite(k,x,y+Math.sin(t*1.4+(ph||0))*6,h,Object.assign({filter:'brightness(0.12)',alpha:0.96},o));mv('sil-'+k+ph);}
+
+// ---------- 转场（温和） ----------
+function dip(t,cut){const dt=t-cut;if(dt>=0&&dt<0.3){const a=Math.sin(Math.PI*dt/0.3);ctx.fillStyle=COL.bg;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function veil(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const a=Math.sin(Math.PI*dt/0.32)*0.30;ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softFlash(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.2){const a=Math.sin(Math.PI*dt/0.2)*0.28;ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softWipe(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const p=eio(dt/0.32);ctx.fillStyle=color;ctx.globalAlpha=0.5;ctx.fillRect(-140+p*(W+280),0,140,H);ctx.globalAlpha=1;}}
+function softIris(t,cut){const dt=t-cut;if(dt>=0&&dt<0.36){const p=eoe(dt/0.36);const r=Math.max(1,1150*p);
+  ctx.fillStyle=COL.bg;ctx.beginPath();ctx.rect(0,0,W,H);ctx.arc(W/2,H/2,r,0,7);ctx.fill('evenodd');}}
+const TRANS_KINDS=['dip','veil','softFlash','softWipe'];
+const TRANS={};let kidx=0;
+for(const sc of SB.scenes){if(sc.s<=0)continue;
+  const r=TRANS_KINDS[kidx%TRANS_KINDS.length];TRANS[sc.s.toFixed(3)]=[r,COL.copper];kidx++;}
+
+// ---------- 场景 ----------
+function sceneByT(t){for(const s of SB.scenes){if(t>=s.s&&t<s.e)return s;}return SB.scenes[SB.scenes.length-1];}
+function subAt(t){for(const s of SB.subs){if(t>=s[0]&&t<s[1])return s[2];}return '';}
+function fishScaleFX(x,y,t,t0,n){
+  for(let i=0;i<n;i++){const p=clamp((t-t0-i*0.08)/0.4,0,1);if(p<=0)continue;
+    const a=Math.sin(t*3+i*2)*0.5+0.5;
+    ctx.save();ctx.globalAlpha=p*0.7*a;
+    const sx=x+(rnd(i)*260-130),sy=y+(rnd(i+9)*220-110);
+    ctx.fillStyle=COL.fish;ctx.beginPath();ctx.arc(sx,sy,8,0,7);ctx.fill();
+    ctx.restore();mv('scale'+i);}
+}
+
+// ============ 钩子 7 镜（样片定稿，原样保留） ============
+function scStatuesHook(sc,t,tl){
+  const defs=[[430,300,0.15],[960,420,0.95],[1490,300,0.45]];
+  for(let i=0;i<3;i++){
+    const p=eob(clamp((tl-defs[i][2])/0.4,0,1));if(p<=0)continue;
+    const x=defs[i][0],h=defs[i][1];
+    const yy=H-130-(H-130-(h/2+420))*p;
+    glowRim(x,yy+h*0.25,h*0.7,t,i===1?'rgba(232,184,75,':'rgba(127,168,201,');
+    const bob=Math.sin(t*1.3+i*1.7)*6;
+    sprite('priest',x,yy+bob,h,{alpha:0.98});
+    if(i===1){ctx.fillStyle='rgba(110,66,32,0.5)';ctx.beginPath();
+      ctx.ellipse(x,H-128,190,34,0,0,7);ctx.fill();mv('pedestal');}
+    mv('statue'+i);
+  }
+  for(let i=0;i<8;i++){const st=(tl*0.7+i*0.12)%1;
+    const sx=260+((i*233)%1400),sy=H-150-st*90;
+    ctx.fillStyle='rgba(217,179,130,'+(0.6-st*0.5).toFixed(2)+')';
+    ctx.fillRect(sx,sy,5,5);mv('dust'+i);}
+  chip(960,150,'出土的雕像',COL.sand,0.05,t,58);
+  mv('statues-hook');
+}
+function scPopeRobe(sc,t,tl){
+  glowRim(960,520,340,t,'rgba(232,184,75,');
+  const p=eob(clamp(tl/0.45,0,1));
+  sprite('priest',960,520+Math.sin(t*1.2)*7,540,{alpha:0.99,scale:p});mv('priest-big');
+  for(let i=0;i<3;i++){const a=clamp((tl-0.3-i*0.35)/0.4,0,1);if(a<=0)continue;
+    ctx.save();ctx.globalAlpha=a;
+    const yx=340+i*180;
+    ctx.strokeStyle='rgba(232,184,75,0.7)';ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(960,yx);ctx.lineTo(960+Math.sin(t*4+i)*40,yx+14);ctx.stroke();
+    ctx.restore();mv('robe-line'+i);}
+  chip(560,230,'教皇一样的长袍',COL.gold,0.5,t,58);
+  chip(1360,230,'鳞片状披肩',COL.fish,1.1,t,58);
+  for(let i=0;i<6;i++){const a=t*0.8+i*1.05,r=440+Math.sin(t*1.2+i)*20;
+    const px=960+Math.cos(a)*r,py=520+Math.sin(a)*r*0.6;
+    ctx.fillStyle='rgba(232,184,75,0.5)';ctx.beginPath();ctx.arc(px,py,5,0,7);ctx.fill();mv('robe-orbit'+i);}
+  mv('pope-robe');
+}
+function scFishSkin(sc,t,tl){
+  const sp=eob(clamp(tl/0.4,0,1));
+  glowRim(520,560,260,t,'rgba(127,168,201,');
+  sprite('priest',520,560+Math.sin(t*1.2)*6,380,{alpha:0.85,scale:sp});mv('priest-side');
+  const hp=eob(clamp((tl-0.2)/0.45,0,1));
+  if(hp>0){glow(1360,520,300,'rgba(127,168,201,A)',0.32);
+    sprite('hood',1360,520+Math.sin(t*1.6)*9,440,{alpha:0.99,scale:hp,rot:Math.sin(t*1.1)*0.03});
+    mv('hood');}
+  fishScaleFX(1360,520,t,0.55,10);
+  chip(960,180,'却套着鱼皮',COL.fish,0.4,t,72);
+  const cp=clamp((tl-0.9)/0.35,0,1);
+  if(cp>0){ctx.save();ctx.strokeStyle=COL.terracotta;ctx.lineWidth=12;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(300,340);ctx.lineTo(300+440*cp,780);ctx.stroke();ctx.restore();mv('cross-robe');}
+  mv('fish-skin');
+}
+function scSumerTime(sc,t,tl){
+  const zp=eob(clamp((tl-0.2)/0.5,0,1));
+  if(zp>0)sprite('ziggurat',1280,648,500,{alpha:0.95,scale:zp});mv('ziggurat');
+  const fp=eob(clamp((tl-0.5)/0.4,0,1));
+  if(fp>0){glowRim(430,600,240,t,'rgba(232,184,75,');
+    sprite('farmer',430,600+Math.sin(t*1.5)*7,400,{alpha:0.98,scale:fp});mv('farmer');}
+  const p1=eob(clamp(tl/0.4,0,1));
+  bigText('四千年前',960,180,120,COL.gold,COL.bg,0,p1);mv('4000');
+  chip(960,300,'苏美尔人',COL.teal,0.55,t,66);
+  for(let i=0;i<7;i++){const px=240+i*240;const py=900+Math.sin(t*2+i)*8;
+    ctx.fillStyle='rgba(217,179,130,0.55)';ctx.fillRect(px,py,12,12);mv('tline'+i);}
+  mv('sumer-time');
+}
+function scCallGod(sc,t,tl){
+  glowRim(960,560,330,t,'rgba(232,184,75,');
+  const p=eob(clamp(tl/0.4,0,1));
+  sprite('priest',960,570+Math.sin(t*1.3)*7,470,{alpha:0.98,scale:p});mv('priest-god');
+  const g1=eob(clamp((tl-0.25)/0.45,0,1));
+  if(g1>0)bigText('神',960,200,170,COL.gold,COL.bg,Math.sin(t*1.8)*0.03,g1);mv('god-char');
+  const ring=clamp((tl-0.3)/1.2,0,1);
+  ctx.save();ctx.strokeStyle='rgba(232,184,75,'+(0.5*(1-ring)).toFixed(3)+')';ctx.lineWidth=8;
+  ctx.beginPath();arc960(570,140+ring*460);ctx.stroke();ctx.restore();mv('ring');
+  if(tl>0.88){
+    const qp=eob(clamp((tl-0.88)/0.35,0,1));
+    bigText('?',1500,300,150,COL.red,COL.gold,Math.sin(t*4)*0.06,qp);mv('q');
+    sprite('linguist',1420,760,280,{alpha:0.95*qp,scale:qp});mv('linguist');
+  }
+  mv('call-god');
+}
+function arc960(y,r){ctx.beginPath();ctx.arc(960,y,r,0,7);}
+function scHowFrom(sc,t,tl){
+  const p=eob(clamp(tl/0.4,0,1));
+  bigText('?',960,400,300,COL.red,COL.gold,Math.sin(t*3)*0.05,p);mv('big-q');
+  bigText('神是怎么来的',960,680,120,COL.cream,COL.bg,0,eob(clamp((tl-0.35)/0.4,0,1)));mv('how');
+  for(let i=0;i<3;i++){const a=t*0.7+i*2.1,r=540+Math.sin(t*1.4+i)*24;
+    const bx=960+Math.cos(a)*r,by=380+Math.sin(a)*r*0.18;
+    sprite('priest',bx,by,150,{alpha:0.85,rot:Math.sin(t*1.5+i)*0.06});mv('orbit-priest'+i);}
+  if(tl>0.97){
+    const ap=eob(clamp((tl-0.97)/0.4,0,1));
+    ctx.save();ctx.globalAlpha=ap;
+    ctx.strokeStyle=COL.fish;ctx.lineWidth=10;ctx.lineCap='round';
+    const ay=780+Math.sin(t*4)*10;
+    ctx.beginPath();ctx.moveTo(960,ay);ctx.lineTo(960,ay+60);
+    ctx.moveTo(960,ay+60);ctx.lineTo(930,ay+30);ctx.moveTo(960,ay+60);ctx.lineTo(990,ay+30);
+    ctx.stroke();ctx.restore();mv('arrow');
+  }
+  mv('how-from');
+}
+function scOannesReveal(sc,t,tl){
+  const ry=clamp(tl/0.9,0,1),yy=H-130-(H-130-540)*eob(ry);
+  glow(960,yy,400,'rgba(127,168,201,A)',0.38);
+  for(let i=0;i<5;i++){ctx.strokeStyle='rgba(127,168,201,'+(0.5-i*0.08)+')';ctx.lineWidth=4;
+    const wy=H-140-i*26;ctx.beginPath();
+    for(let x=0;x<=W;x+=32){ctx.lineTo(x,wy+Math.sin(x*0.012+t*(2.5+i*0.4)+i)*8);}ctx.stroke();mv('wave'+i);}
+  for(let i=0;i<12;i++){const st=(tl*0.8+i*0.09)%1;
+    const sx=960+Math.sin(i*7)*300,sy=yy+200-st*360;
+    ctx.fillStyle='rgba(127,168,201,'+(0.8-st*0.6).toFixed(2)+')';
+    ctx.beginPath();ctx.arc(sx,sy,7,0,7);ctx.fill();mv('drop'+i);}
+  sprite('oannes',960,yy+Math.sin(t*1.3)*6,520,{alpha:clamp(tl*1.5,0,1)});mv('oannes');
+  const p2=eob(clamp((tl-0.55)/0.4,0,1));
+  if(p2>0){card(960,150,620,200,{stroke:COL.fish,scale:p2,fill:'rgba(127,168,201,0.24)'});
+    bigText('半人半鱼',960,150,104,COL.cream,COL.fishD,0,p2);mv('namecard');}
+  if(tl>1.0)chip(420,820,'鱼首人身',COL.fish,tl-1.0,t,56);
+  if(tl>1.4)chip(1500,820,'来自深海',COL.teal,tl-1.4,t,56);
+  const ring=clamp(tl/1.2,0,1);
+  ctx.save();ctx.strokeStyle='rgba(127,168,201,'+(0.5*(1-ring)).toFixed(3)+')';ctx.lineWidth=8;
+  ctx.beginPath();ctx.arc(960,yy,140+ring*440,0,7);ctx.stroke();ctx.restore();mv('ring2');
+  mv('oannes-reveal');
+}
+
+// ============ 通用引擎 ============
+// 大字金句
+function scBigWord(cfg,sc,t,tl){
+  const p=eob(clamp(tl/0.45,0,1));
+  const color=COL[cfg.color]||COL.gold;
+  const wsize=Math.min(150,1500/Math.max(4,cfg.word.length)*1.3);
+  bigText(cfg.word,960,cfg.sub?450:520,wsize,color,COL.bg,0,p);mv('bw-word');
+  const u=clamp((tl-0.4)/0.5,0,1)*860;
+  ctx.fillStyle=cfg.color==='red'?COL.gold:COL.red;ctx.fillRect(960-u/2,cfg.sub?590:650,u,12);mv('bw-line');
+  if(cfg.sub){const p2=eob(clamp((tl-0.55)/0.4,0,1));
+    bigText(cfg.sub,960,cfg.sub.length>12?720:710,62,COL.cream,null,0,p2);mv('bw-sub');}
+  // 持续环绕粒子（保证长镜每2秒动效）
+  for(let i=0;i<6;i++){const a=t*0.9+i*1.05,r=470+Math.sin(t*1.3+i)*22;
+    ctx.save();ctx.globalAlpha=0.5+0.3*Math.sin(t*2+i);
+    ctx.fillStyle=color;
+    ctx.beginPath();ctx.arc(960+Math.cos(a)*r,500+Math.sin(a)*r*0.46,7,0,7);ctx.fill();ctx.restore();mv('bw-orb'+i);}
+  // 大数字额外脉动
+  if(cfg.num){const np=1+0.05*Math.sin(t*5);
+    bigText(cfg.num,960,300,200,color,COL.bg,0,np);mv('bw-num');}
+  mv('bigword');
+}
+// 居中素材+词
+function scCenter(cfg,sc,t,tl){
+  const col=cfg.color?COL[cfg.color]:COL.gold;
+  glow(960,520,380,cfg.color==='fish'?'rgba(127,168,201,A)':'rgba(232,184,75,A)',0.24);
+  if(cfg.sp)sprite(cfg.sp,960,470+Math.sin(t*1.3)*7,430,{alpha:0.98});mv('ct-hero');
+  if(cfg.sp2){const p2=eob(clamp((tl-0.6)/0.45,0,1));
+    sprite(cfg.sp2,1500,620+Math.sin(t*1.5)*8,300,{alpha:0.95*p2,scale:p2});mv('ct-hero2');}
+  const p=eob(clamp((tl-0.35)/0.4,0,1));
+  if(cfg.word)bigText(cfg.word,960,cfg.sub?748:790,Math.min(92,1360/Math.max(4,cfg.word.length)*1.2),col,COL.bg,0,p);mv('ct-word');
+  if(cfg.sub){const p2=eob(clamp((tl-0.7)/0.4,0,1));
+    bigText(cfg.sub,960,852,60,COL.cream,null,0,p2);mv('ct-sub');}
+  if(cfg.sats){const xs=cfg.sats.length===2?[380,1540]:[380,960,1540];
+    for(let i=0;i<cfg.sats.length;i++){
+      chip(xs[i],250,cfg.sats[i],i%2?COL.fish:COL.teal,0.5+i*0.5,t,56);mv('ct-sat'+i);}}
+  const ring=clamp(tl/1.0,0,1);
+  ctx.save();ctx.strokeStyle='rgba(232,184,75,'+(0.4*(1-ring)).toFixed(3)+')';ctx.lineWidth=7;
+  ctx.beginPath();ctx.arc(960,500,150+ring*380,0,7);ctx.stroke();ctx.restore();mv('ct-ring');
+  for(let i=0;i<5;i++){const a=t*0.8+i*1.26,r=430+Math.sin(t*1.2+i)*18;
+    ctx.fillStyle='rgba(232,184,75,0.4)';ctx.beginPath();
+    ctx.arc(960+Math.cos(a)*r,500+Math.sin(a)*r*0.55,5,0,7);ctx.fill();mv('ct-orb'+i);}
+  mv('center');
+}
+// 三卡（文字）
+function scRow3(cfg,sc,t,tl){
+  const xs=[420,960,1500];
+  const items=cfg.items||sc.items;
+  for(let i=0;i<3;i++){
+    const p=eob(clamp((tl-0.15-i*0.45)/0.4,0,1));if(p<=0)continue;
+    const bob=Math.sin(t*1.6+i*1.7)*7;
+    card(xs[i],540,440,400,{stroke:i%2?COL.fish:COL.gold,scale:p,fill:'rgba(255,255,255,0.06)'});
+    const lb=typeof items[i]==='string'?items[i]:items[i].lb;
+    bigText(lb,xs[i],560+bob,82,COL.white,null,0,p);
+    ctx.save();ctx.globalAlpha=0.5*p;ctx.strokeStyle=COL.gold;ctx.lineWidth=4;
+    ctx.beginPath();ctx.arc(xs[i],430,34+Math.sin(t*2+i)*3,0,7);ctx.stroke();ctx.restore();mv('r3-ring'+i);
+    mv('r3-card'+i);
+  }
+  mv('row3');
+}
+// 三卡（带素材）
+function scRow3sp(cfg,sc,t,tl){
+  const xs=[420,960,1500];
+  const items=cfg.items||sc.items;
+  for(let i=0;i<3;i++){
+    const p=eob(clamp((tl-0.15-i*0.4)/0.4,0,1));if(p<=0)continue;
+    const bob=Math.sin(t*1.6+i*1.7)*7;
+    card(xs[i],560,400,500,{stroke:i%2?COL.fish:COL.gold,scale:p,fill:'rgba(255,255,255,0.06)'});
+    const it=items[i];
+    if(it.sp)sprite(it.sp,xs[i],470+bob,230,{alpha:0.98,scale:p});
+    bigText(it.lb,xs[i],700,72,COL.white,null,0,p);
+    mv('r3sp-card'+i);
+  }
+  mv('row3sp');
+}
+// 双卡对峙
+function scDuo(cfg,sc,t,tl){
+  const ac=cfg.accent?COL[cfg.accent]:COL.fish;
+  const defs=[[cfg.a,480,COL.gold],[cfg.b,1440,ac]];
+  for(let i=0;i<2;i++){
+    const d=defs[i][0],x=defs[i][1];
+    const p=eob(clamp((tl-0.1-i*0.5)/0.4,0,1));if(p<=0)continue;
+    const bob=Math.sin(t*1.5+i*2)*8;
+    card(x,540,600,580,{stroke:defs[i][2],scale:p,fill:'rgba(255,255,255,0.055)'});
+    if(d.sp)sprite(d.sp,x,430+bob,300,{alpha:0.98,scale:p});
+    if(d.num)bigText(d.num,x,470,180,d.num.length>4?110:180,defs[i][2],COL.bg,0,p);
+    bigText(d.lb,x,d.sp?750:680,66,i?ac:COL.gold,null,0,p);
+    if(d.sub)bigText(d.sub,x,830,54,COL.cream,null,0,eob(clamp((tl-0.6-i*0.4)/0.4,0,1)));
+    mv('duo-card'+i);
+  }
+  const q=cfg.q||'VS';
+  const vs=1+0.06*Math.sin(t*4);
+  ctx.save();ctx.translate(960,470);ctx.rotate(Math.sin(t*1.2)*0.07);ctx.scale(vs,vs);
+  ctx.fillStyle=COL.redD;ctx.beginPath();ctx.roundRect(-120,-64,240,128,20);ctx.fill();ctx.restore();
+  bigText(q,960,470,76,COL.white,null,Math.sin(t*1.2)*0.07,vs);mv('duo-vs');
+  mv('duo');
+}
+// 时间线
+function scTimeline(cfg,sc,t,tl){
+  const n=cfg.nodes.length;
+  const lbs=cfg.nodes.map(nd=>typeof nd==='string'?nd:nd.lb);
+  const gap=Math.min(520,Math.max(260,Math.max(...lbs.map(x=>x.length))*64+80));
+  const x0=960-((n-1)*gap)/2,y=520;
+  ctx.strokeStyle='rgba(232,184,75,0.55)';ctx.lineWidth=6;ctx.lineCap='round';
+  const lg=clamp((tl-0.3)/1.4,0,1)*(n-1)*gap;
+  ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x0+lg,y);ctx.stroke();mv('tl-line');
+  for(let i=0;i<n;i++){
+    const p=eob(clamp((tl-0.15-i*0.4)/0.35,0,1));if(p<=0)continue;
+    const bob=Math.sin(t*1.5+i*1.6)*6;
+    const xx=x0+i*gap;
+    ctx.save();ctx.translate(xx,y+bob);
+    ctx.fillStyle=COL.bg;ctx.strokeStyle=i%2?COL.fish:COL.gold;ctx.lineWidth=6;
+    ctx.beginPath();ctx.arc(0,0,46,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle=i%2?COL.fish:COL.gold;ctx.beginPath();ctx.arc(0,0,18+Math.sin(t*3+i)*2,0,7);ctx.fill();
+    ctx.restore();mv('tl-node'+i);
+    const nd=cfg.nodes[i];
+    bigText(typeof nd==='string'?nd:nd.lb,xx,y+120,64,COL.cream,null,0,p);
+    if(typeof nd!=='string'&&nd.sub)bigText(nd.sub,xx,y+185,50,COL.sand,null,0,p);
+  }
+  if(cfg.tail){const p=eob(clamp((tl-1.6)/0.4,0,1));
+    if(p>0){card(960,830,760,140,{stroke:COL.fish,scale:p,fill:'rgba(127,168,201,0.14)'});
+      bigText(cfg.tail,960,830,68,COL.fish,null,0,p);mv('tl-tail');}}
+  mv('timeline');
+}
+// 问号
+function scQuestion2(cfg,sc,t,tl){
+  const wob=Math.sin(t*3)*0.05;
+  bigText('?',960,400,300,COL.red,COL.gold,wob,eob(clamp(tl/0.4,0,1)));mv('q2-mark');
+  if(cfg.word){const p=eob(clamp((tl-0.3)/0.4,0,1));
+    bigText(cfg.word,960,720,96,COL.cream,null,0,p);mv('q2-word');}
+  if(cfg.sub){bigText(cfg.sub,960,830,58,COL.sand,null,0,eob(clamp((tl-0.7)/0.4,0,1)));mv('q2-sub');}
+  for(let i=0;i<5;i++){const a=t*0.9+i*1.26,r=430+Math.sin(t*1.2+i)*24;
+    ctx.save();ctx.globalAlpha=0.85;
+    ctx.translate(960+Math.cos(a)*r,400+Math.sin(a)*r*0.6);
+    ctx.rotate(Math.sin(t*1.5+i)*0.2);
+    ctx.fillStyle=i%2?COL.gold:COL.fish;
+    ctx.beginPath();ctx.arc(0,0,9,0,7);ctx.fill();ctx.restore();mv('q2-orb'+i);}
+  mv('question2');
+}
+
+// ============ 题材专属 ============
+// 四卡教学：盖庙/编法律/搞农业/算几何
+function scTeach4(sc,t,tl){
+  const defs=[['盖庙','ziggurat',320,COL.gold],['编法律','kinglist',780,COL.sand],
+             ['搞农业','plow',1240,COL.teal],['算几何','__geo',1700,COL.fish]];
+  const tps=[0.15,0.9,1.6,2.3];
+  for(let i=0;i<4;i++){
+    const p=eob(clamp((tl-tps[i])/0.4,0,1));if(p<=0)continue;
+    const bob=Math.sin(t*1.6+i*1.6)*7,x=defs[i][2];
+    card(x,540,380,470,{stroke:defs[i][3],scale:p,fill:'rgba(255,255,255,0.06)'});
+    if(defs[i][1]==='__geo'){ // 几何：三角+圆（代码绘制）
+      ctx.save();ctx.translate(x,470+bob);ctx.scale(p,p);ctx.strokeStyle=COL.fish;ctx.lineWidth=10;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(-78,72);ctx.lineTo(0,-92);ctx.lineTo(78,72);ctx.closePath();ctx.stroke();
+      ctx.beginPath();ctx.arc(0,46,30,0,7);ctx.stroke();
+      ctx.fillStyle=COL.fish;ctx.beginPath();ctx.arc(0,46,8,0,7);ctx.fill();
+      ctx.restore();
+    }else sprite(defs[i][1],x,470+bob,240,{alpha:0.98,scale:p});
+    bigText(defs[i][0],x,720,74,COL.white,null,0,p);
+    mv('t4-card'+i);
+  }
+  bigText('教人四样本事',960,200,80,COL.gold,COL.bg,0,eob(clamp(tl/0.4,0,1)));mv('t4-title');
+  mv('teach4');
+}
+// 夜游深海
+function scNightsea(sc,t,tl){
+  // 月亮
+  const mp=eob(clamp(tl/0.5,0,1));
+  ctx.save();ctx.globalAlpha=0.9*mp;ctx.fillStyle='rgba(243,234,211,0.85)';
+  ctx.beginPath();ctx.arc(1500,200,70,0,7);ctx.fill();ctx.fillStyle=COL.bg;ctx.beginPath();ctx.arc(1475,185,60,0,7);ctx.fill();ctx.restore();mv('moon');
+  // 欧安涅斯剪影下沉（游回深海，底部避让918）
+  const sink=clamp(tl/2.8,0,1);
+  const yy=470+sink*205;
+  glow(960,yy,360,'rgba(127,168,201,A)',0.3);
+  sprite('oannes',960,yy,420,{alpha:0.96*(1-sink*0.5),rot:Math.sin(t*1.2)*0.04});mv('oannes-sink');
+  // 水波（升到腰部）
+  for(let i=0;i<8;i++){ctx.strokeStyle='rgba(127,168,201,'+(0.55-i*0.05)+')';ctx.lineWidth=4;
+    const wy=H-120-i*20;ctx.beginPath();
+    for(let x=0;x<=W;x+=30){ctx.lineTo(x,wy+Math.sin(x*0.014+t*(3+i*0.3)+i)*10);}ctx.stroke();mv('n-wave'+i);}
+  // 气泡上浮
+  for(let i=0;i<14;i++){const st=(tl*0.5+i*0.07)%1;
+    const sx=960+Math.sin(i*5.3)*320,sy=yy+200-st*420;
+    ctx.strokeStyle='rgba(127,168,201,'+(0.7-st*0.5).toFixed(2)+')';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(sx,sy,6+st*8,0,7);ctx.stroke();mv('bubble'+i);}
+  // 标签
+  chip(960,230,'晚上游回深海',COL.fish,0.4,t,66);
+  if(tl>1.2){bigText('算几何',430,300,72,COL.sand,COL.bg,0,eob(clamp((tl-1.2)/0.4,0,1)));mv('geo-tag');}
+  mv('nightsea');
+}
+// 航天飞机扫描四河
+function scShuttle(sc,t,tl){
+  sprite('rivers',1260,660,470,{alpha:0.95});mv('sh-map');
+  // 航天飞机（代码）
+  const sx=300+clamp(tl/3.2,0,1)*1000, sy=240+Math.sin(t*2)*14;
+  ctx.save();ctx.translate(sx,sy);
+  ctx.fillStyle=COL.cream;ctx.beginPath();ctx.moveTo(-70,0);ctx.lineTo(40,-26);ctx.lineTo(90,-8);ctx.lineTo(40,26);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.gold;ctx.fillRect(-30,-14,80,28);
+  ctx.fillStyle=COL.terracotta;ctx.beginPath();ctx.moveTo(-70,0);ctx.lineTo(-110,-20);ctx.lineTo(-110,20);ctx.closePath();ctx.fill();
+  ctx.restore();mv('shuttle');
+  // 扫描锥
+  const sweep=clamp((tl-0.4)/2.4,0,1);
+  ctx.save();ctx.globalAlpha=0.3*sweep;
+  ctx.fillStyle=COL.fish;ctx.beginPath();ctx.moveTo(sx,sy+20);ctx.lineTo(sx-160,860);ctx.lineTo(sx+260,860);ctx.closePath();ctx.fill();ctx.restore();mv('sweep');
+  // 扫描线
+  for(let i=0;i<4;i++){const ly=420+i*110;
+    ctx.strokeStyle='rgba(127,168,201,'+(0.4+0.3*Math.sin(t*4+i))+')';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(700,ly);ctx.lineTo(1820,ly);ctx.stroke();mv('scanline'+i);}
+  chip(520,380,'1994年航天飞机',COL.gold,0.5,t,58);
+  chip(520,480,'四条大河汇入',COL.fish,1.2,t,58);
+  mv('shuttle-scene');
+}
+// 海平面（variant: down 冰期下降 / jump 跳升 / up 未来涨70）
+function scSea(cfg,sc,t,tl){
+  const v=cfg.variant;
+  if(v==='down'){ // 冰期：海平面低120米，水线很低
+    const drop=clamp((tl-0.3)/1.6,0,1);
+    sprite('ice',520,560+Math.sin(t*1.3)*6,420,{alpha:0.97});mv('ice');
+    const wy=620+drop*240;
+    ctx.fillStyle='rgba(127,168,201,0.28)';ctx.fillRect(0,wy,W,H-wy);
+    for(let i=0;i<5;i++){ctx.strokeStyle='rgba(127,168,201,'+(0.6-i*0.08)+')';ctx.lineWidth=4;
+      const y=wy+20+i*26;ctx.beginPath();for(let x=0;x<=W;x+=30)ctx.lineTo(x,y+Math.sin(x*0.014+t*(3+i*0.3)+i)*8);ctx.stroke();}
+    mv('sea-down');
+    bigText('低120米',1300,360,140,COL.fish,COL.bg,0,eob(clamp((tl-0.4)/0.45,0,1)));mv('num120');
+    bigText('末次冰盛期全球海平面',1300,500,60,COL.cream,null,0,eob(clamp((tl-1.0)/0.4,0,1)));
+    bigText('冰盖＝水银行',520,830,66,COL.gold,null,0,eob(clamp((tl-0.8)/0.4,0,1)));
+    for(let i=0;i<8;i++){const fy=wy- (i%4)*40;ctx.fillStyle='rgba(243,234,211,0.7)';ctx.fillRect(900+i*90,fy,6,200);mv('gauge'+i);}
+  } else if(v==='jump'){ // 海平面一波波跳
+    const rise=clamp((tl-0.2)/1.8,0,1);
+    const wy=860-rise*340;
+    ctx.fillStyle='rgba(127,168,201,'+(0.34+0.06*Math.sin(t*3))+')';ctx.fillRect(0,wy,W,H-wy);
+    for(let i=0;i<6;i++){ctx.strokeStyle='rgba(127,168,201,'+(0.7-i*0.08)+')';ctx.lineWidth=4;
+      const y=wy+14+i*22;ctx.beginPath();for(let x=0;x<=W;x+=28)ctx.lineTo(x,y+Math.sin(x*0.016+t*(4+i*0.3)+i)*10);ctx.stroke();}
+    mv('sea-jump');
+    // 台阶式上涨刻度
+    for(let i=0;i<4;i++){const p=clamp((tl-0.3-i*0.4)/0.3,0,1);
+      ctx.fillStyle='rgba(232,184,75,'+p+')';ctx.fillRect(1500,820-i*70,14,14);mv('tick'+i);}
+    bigText('海平面往上跳',960,230,96,COL.fish,COL.bg,0,eob(clamp(tl/0.4,0,1)));mv('jump-word');
+  } else { // up 未来涨70米
+    const rise=clamp((tl-0.3)/2.2,0,1);
+    const wy=820-rise*300;
+    ctx.fillStyle='rgba(127,168,201,0.34)';ctx.fillRect(0,wy,W,H-wy);
+    for(let i=0;i<6;i++){ctx.strokeStyle='rgba(127,168,201,'+(0.7-i*0.08)+')';ctx.lineWidth=4;
+      const y=wy+14+i*22;ctx.beginPath();for(let x=0;x<=W;x+=28)ctx.lineTo(x,y+Math.sin(x*0.016+t*(3.5+i*0.3)+i)*9);ctx.stroke();}
+    mv('sea-up');
+    bigText('还得再涨70米',960,300,120,COL.fish,COL.bg,0,eob(clamp((tl-0.4)/0.45,0,1)));mv('num70');
+    bigText('冰盖按历史常态化完',960,430,62,COL.cream,null,0,eob(clamp((tl-1.2)/0.4,0,1)));
+    // 城市被淹剪影
+    for(let i=0;i<4;i++){const bx=300+i*440,bh=120+((i*53)%90);
+      ctx.fillStyle='rgba(10,15,17,0.85)';ctx.fillRect(bx-40,wy-bh,80,bh);mv('city'+i);}
+  }
+  // 气泡
+  for(let i=0;i<10;i++){const st=(t*0.6+i*0.1)%1;
+    const sx=200+((i*197)%1500),sy=H-140-st*500;
+    ctx.strokeStyle='rgba(127,168,201,'+(0.6-st*0.4).toFixed(2)+')';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(sx,sy,5+st*6,0,7);ctx.stroke();mv('sbubble'+i);}
+  mv('sea-'+v);
+}
+// 温盐环流（cut 掐断 / weak 减弱）
+function scAmoc(cfg,sc,t,tl){
+  const weak=cfg.variant==='weak';
+  // 地球（简化圆）
+  ctx.save();ctx.translate(960,540);
+  ctx.fillStyle='rgba(31,64,64,0.8)';ctx.beginPath();ctx.arc(0,0,330,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(232,184,75,0.3)';ctx.lineWidth=3;
+  for(let i=0;i<6;i++){ctx.beginPath();ctx.arc(0,0,60+i*50,0,7);ctx.stroke();}
+  ctx.restore();mv('globe');
+  // 环流箭头（暖流红色，循环）
+  const flow=weak?0.35:clamp(1-tl/2.4,0.2,1);
+  for(let i=0;i<5;i++){
+    const ph=(t*0.5*(weak?0.2:1)+i*0.2)%1;
+    const ang=ph*Math.PI*2;
+    const ax=960+Math.cos(ang)*260, ay=540+Math.sin(ang)*260;
+    ctx.fillStyle='rgba('+(weak?'120,120,120':'201,107,61')+','+(0.85*flow)+')';
+    ctx.save();ctx.translate(ax,ay);ctx.rotate(ang+Math.PI/2);
+    ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(10,10);ctx.lineTo(-10,10);ctx.closePath();ctx.fill();ctx.restore();mv('flow'+i);}
+  if(!weak){
+    // 掐断：淡水冲入 + 红叉
+    const cp=clamp((tl-1.4)/0.5,0,1);
+    if(cp>0){ctx.strokeStyle=COL.red;ctx.lineWidth=16;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(760,340);ctx.lineTo(1160,740);ctx.stroke();
+      ctx.moveTo(1160,340);ctx.lineTo(760,740);ctx.stroke();mv('amoc-cut');}
+    // 淡水洪流（顶部）
+    for(let i=0;i<10;i++){const st=(t*1.2+i*0.09)%1;
+      const fx=500+((i*167)%920),fy=180+st*300;
+      ctx.fillStyle='rgba(127,168,201,'+(0.7-st*0.4)+')';ctx.fillRect(fx,fy,10,30);mv('fresh'+i);}
+    bigText('温盐环流被掐断',960,200,86,COL.red,COL.bg,0,eob(clamp((tl-0.3)/0.4,0,1)));mv('amoc-word');
+    chip(430,860,'全球的暖气片',COL.terracotta,1.0,t,56);
+  }else{
+    bigText('温盐环流又减弱了',960,180,82,COL.terracotta,COL.bg,0,eob(clamp(tl/0.4,0,1)));mv('amoc-word2');
+    bigText('可这一次北美冰盖早化完了',960,880,60,COL.cream,null,0,eob(clamp((tl-1.2)/0.4,0,1)));
+    bigText('它凭什么减弱？',1360,300,72,COL.red,COL.gold,Math.sin(t*3)*0.04,eob(clamp((tl-1.8)/0.4,0,1)));
+  }
+  mv('amoc-'+cfg.variant);
+}
+// 人群汇聚
+function scGather(sc,t,tl){
+  const people=['farmer','linguist','ross','priest','farmer','linguist'];
+  const n=people.length;
+  for(let i=0;i<n;i++){
+    const p=clamp((tl-0.2-i*0.32)/0.6,0,1);if(p<=0)continue;
+    const ang=i*(Math.PI*2/n);
+    const r=520*(1-p)+55;
+    const bx=960+Math.cos(ang)*r, by=610+Math.sin(ang)*r*0.4;
+    sprite(people[i],bx,by+Math.sin(t*1.5+i)*6,190,{alpha:0.96});mv('gather-'+i);
+  }
+  // 中心绿洲光柱
+  const gp=clamp(tl/1.4,0,1);
+  glow(960,620,300,'rgba(232,184,75,A)',0.28*gp);
+  sprite('spring',960,660,250,{alpha:0.9*gp});mv('gather-spring');
+  bigText('各族群涌向唯一的绿洲',960,200,78,COL.gold,COL.bg,0,eob(clamp(tl/0.4,0,1)));mv('gather-title');
+  chip(380,360,'有水',COL.fish,0.6,t,56);chip(1540,360,'有泉眼',COL.teal,1.0,t,56);
+  mv('gather');
+}
+// 炼丹（技术汇聚成球）
+function scAlchemy(sc,t,tl){
+  const glowp=clamp(tl/2.0,0,1);
+  const pr=80+glowp*180*(1+0.05*Math.sin(t*4));
+  ctx.save();const g=ctx.createRadialGradient(960,560,20,960,560,pr);
+  g.addColorStop(0,'rgba(232,184,75,0.85)');g.addColorStop(0.6,'rgba(201,107,61,0.35)');g.addColorStop(1,'rgba(201,107,61,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(960,560,pr,0,7);ctx.fill();ctx.restore();mv('crucible');
+  // 技术粒子汇入（椭圆轨道，底部避让918）
+  const items=['boat','plow','ziggurat','dna','seedbasket','kinglist'];
+  for(let i=0;i<items.length;i++){
+    const p=clamp((tl-0.2-i*0.3)/2.2,0,1);
+    const ang=i*1.05+t*0.4;
+    const r=500*(1-p)+40;
+    const bx=960+Math.cos(ang)*r, by=560+Math.sin(ang)*r*0.5;
+    sprite(items[i],bx,by,130,{alpha:0.92});mv('alch-'+i);
+  }
+  // 火星
+  for(let i=0;i<14;i++){const st=(t*0.8+i*0.07)%1;
+    const sx=960+Math.sin(i*3.1)*200,sy=600-st*420;
+    ctx.fillStyle='rgba(232,184,75,'+(0.8-st*0.6)+')';ctx.beginPath();ctx.arc(sx,sy,6,0,7);ctx.fill();mv('spark'+i);}
+  bigText('顶尖技术凑到一块儿',960,200,78,COL.gold,COL.bg,0,eob(clamp(tl/0.4,0,1)));
+  bigText('像炼丹一样',960,840,68,COL.terracotta,null,0,eob(clamp((tl-0.8)/0.4,0,1)));mv('alch-title');
+  mv('alchemy');
+}
+// 洪水（variant: burst 溃坝 / kish 基什山垮 / born 绿洲变波斯湾）
+function scFlood(cfg,sc,t,tl){
+  const v=cfg.variant;
+  if(v==='burst'){
+    sprite('ice',1500,400,420,{alpha:0.95});mv('ice-dam');
+    // 冰湖
+    ctx.fillStyle='rgba(127,168,201,0.5)';ctx.fillRect(1200,200,720,300);
+    const breakp=clamp((tl-0.8)/0.8,0,1);
+    // 溃坝水墙
+    const wx=1500-breakp*900;
+    ctx.fillStyle='rgba(127,168,201,'+(0.7+0.1*Math.sin(t*5))+')';ctx.fillRect(wx,400,1600,460);
+    for(let i=0;i<8;i++){ctx.strokeStyle='rgba(243,234,211,0.6)';ctx.lineWidth=5;
+      const y=440+i*50;ctx.beginPath();ctx.moveTo(wx,y);ctx.lineTo(wx+1500,y+Math.sin(t*6+i)*14);ctx.stroke();mv('wall'+i);}
+    // 崩裂冰块
+    for(let i=0;i<10;i++){const p=clamp((tl-0.8-i*0.03)/0.8,0,1);
+      const ix=1400-p*(500+((i*97)%500)),iy=300+p*400+Math.sin(i*3)*40;
+      ctx.fillStyle='rgba(200,225,240,0.85)';ctx.fillRect(ix,iy,26,26);mv('icefrag'+i);}
+    bigText('8200年前 冰湖崩了',960,180,82,COL.fish,COL.bg,0,eob(clamp(tl/0.4,0,1)));mv('burst-title');
+  } else if(v==='kish'){
+    // 基什山被冲垮
+    const cr=clamp((tl-0.6)/1.4,0,1);
+    sprite('kish',700,600,500,{alpha:0.97});mv('kish-mt');
+    // 裂缝
+    ctx.strokeStyle='rgba(217,83,79,'+cr+')';ctx.lineWidth=12;
+    ctx.beginPath();ctx.moveTo(700,380);
+    for(let i=0;i<5;i++)ctx.lineTo(700+Math.sin(i*2)*60+cr*0,420+i*90);ctx.stroke();mv('crack');
+    // 右侧水墙推进
+    const wx=1900-cr*900;
+    ctx.fillStyle='rgba(127,168,201,0.7)';ctx.fillRect(wx,460,900,520);
+    for(let i=0;i<6;i++){ctx.strokeStyle='rgba(243,234,211,0.55)';ctx.lineWidth=5;
+      const y=500+i*60;ctx.beginPath();ctx.moveTo(wx,y);ctx.lineTo(wx+900,y+Math.sin(t*6+i)*14);ctx.stroke();mv('kwall'+i);}
+    // 碎石
+    for(let i=0;i<10;i++){const p=clamp((tl-0.6-i*0.02)/1.2,0,1);
+      ctx.fillStyle='rgba(110,66,32,0.9)';const rx=700+Math.sin(i*7)*160+p*300,ry=500-p*0+Math.sin(i*5)*30;
+      ctx.fillRect(rx,ry,24,24);mv('rock'+i);}
+    bigText('冲垮基什山 海水倒灌',960,180,78,COL.red,COL.bg,0,eob(clamp(tl/0.4,0,1)));mv('kish-title');
+  } else { // born 绿洲一夜变波斯湾
+    const fill=clamp((tl-0.3)/1.8,0,1);
+    // 绿洲（泉眼/河流）先显示
+    sprite('spring',960,620,420,{alpha:0.95*(1-fill*0.7)});mv('born-spring');
+    // 上涨的海
+    const wy=830-fill*370;
+    ctx.fillStyle='rgba(127,168,201,'+(0.55+0.05*Math.sin(t*3))+')';ctx.fillRect(0,wy,W,H-wy);
+    for(let i=0;i<7;i++){ctx.strokeStyle='rgba(243,234,211,'+(0.5-i*0.05)+')';ctx.lineWidth=4;
+      const y=wy+12+i*24;ctx.beginPath();for(let x=0;x<=W;x+=28)ctx.lineTo(x,y+Math.sin(x*0.015+t*(3.4+i*0.3)+i)*10);ctx.stroke();}
+    mv('born-sea');
+    // 小船漂走
+    const dr=clamp(tl/2.2,0,1);
+    sprite('boat',1300,wy-45+Math.sin(t*1.4)*8,170,{alpha:0.95});mv('born-boat');
+    bigText('绿洲一夜变成波斯湾',960,180,84,COL.fish,COL.bg,0,eob(clamp((tl-0.2)/0.45,0,1)));mv('born-title');
+  }
+  // 雨/水汽
+  for(let i=0;i<12;i++){const st=(t*1.0+i*0.08)%1;
+    const rx=100+((i*173)%1700),ry=st*H;
+    ctx.fillStyle='rgba(127,168,201,'+(0.5-st*0.3)+')';ctx.fillRect(rx,ry,4,22);mv('rain'+i);}
+  mv('flood-'+v);
+}
+// 洪水后：人神搭伙，孤岛
+function scAfterFlood(sc,t,tl){
+  const rise=clamp((tl-0.3)/3.5,0,1);
+  const wy=800-rise*230;
+  ctx.fillStyle='rgba(127,168,201,0.4)';ctx.fillRect(0,wy,W,H-wy);
+  for(let i=0;i<5;i++){ctx.strokeStyle='rgba(127,168,201,'+(0.55-i*0.07)+')';ctx.lineWidth=4;
+    const y=wy+16+i*26;ctx.beginPath();for(let x=0;x<=W;x+=30)ctx.lineTo(x,y+Math.sin(x*0.014+t*(3+i*0.3)+i)*8);ctx.stroke();}
+  mv('af-sea');
+  // 方舟漂在水上（底部避让918）
+  sprite('ark',960,wy-50+Math.sin(t*1.3)*10,320,{alpha:0.97});mv('af-ark');
+  // 船上人神（小）
+  sprite('priest',840,wy-150,130,{alpha:0.9});mv('af-god');
+  sprite('farmer',1080,wy-140,120,{alpha:0.9});mv('af-man');
+  // 远方一个个孤岛（山顶）
+  for(let i=0;i<4;i++){const ix=200+i*440,ih=70+((i*61)%60);
+    ctx.fillStyle='rgba(110,66,32,0.7)';ctx.beginPath();
+    ctx.moveTo(ix-90,wy);ctx.lineTo(ix,wy-ih);ctx.lineTo(ix+90,wy);ctx.closePath();ctx.fill();mv('island'+i);}
+  bigText('人神搭伙过日子',960,180,84,COL.gold,COL.bg,0,eob(clamp(tl/0.4,0,1)));
+  bigText('家园一座座变成孤岛',960,280,62,COL.cream,null,0,eob(clamp((tl-0.7)/0.4,0,1)));mv('af-title');
+  mv('after-flood');
+}
+// 片尾卡
+function scEndcard(sc,t,tl){
+  const p=eoe(clamp(tl/0.5,0,1));
+  // 海面与小船
+  ctx.fillStyle='rgba(127,168,201,0.25)';ctx.fillRect(0,760,W,260);
+  for(let i=0;i<5;i++){ctx.strokeStyle='rgba(127,168,201,'+(0.5-i*0.07)+')';ctx.lineWidth=4;
+    const y=790+i*30;ctx.beginPath();for(let x=0;x<=W;x+=30)ctx.lineTo(x,y+Math.sin(x*0.014+t*(2.5+i*0.3)+i)*7);ctx.stroke();}
+  mv('ec-sea');
+  sprite('boat',960,620+Math.sin(t*1.3)*8,360,{alpha:0.98*p});mv('ec-boat');
+  glow(960,560,400,'rgba(232,184,75,A)',0.2);
+  bigText('我是艾伦',960,300,130,COL.gold,COL.bg,0,p);mv('ec-title');
+  const p2=eob(clamp((tl-0.6)/0.4,0,1));
+  bigText('遛狗去了，白了个白',960,830,66,COL.cream,null,0,p2);mv('ec-sub');
+  for(let i=0;i<6;i++){const a=t*1.1+i*1.05,r=480;
+    ctx.fillStyle='rgba(232,184,75,'+(0.25+0.2*Math.sin(t*2.6+i)).toFixed(2)+')';
+    ctx.beginPath();ctx.arc(960+Math.cos(a)*r,540+Math.sin(a)*r*0.55,6,0,7);ctx.fill();mv('ec-orb'+i);}
+  mv('endcard');
+}
+
+// ============ TYPE_CFG 配置 ============
+const TYPE_CFG={
+ 'knowledge':{kind:'bigword',word:'知识没超过这条鱼',sub:'人类的知识，再也没超过这条鱼的传授',color:'fish'},
+ 'urbanlegend':{kind:'bigword',word:'最古老的都市传说',color:'gold'},
+ 'hypo-name':{kind:'bigword',word:'波斯湾绿洲假说',color:'gold'},
+ 'sea-gods':{kind:'bigword',word:'不就是神吗',sub:'从海里冒出来的人',color:'gold'},
+ 'guess-evidence':{kind:'bigword',word:'我猜的',sub:'但我有证据',color:'gold'},
+ 'borrowed':{kind:'bigword',word:'全是借来的',sub:'说明他们是后来搬来的',color:'red'},
+ 'eden':{kind:'bigword',word:'伊甸园',sub:'四条大河 四面环山',color:'gold'},
+ 'ice-age':{kind:'bigword',word:'我们还活在冰河期',sub:'地球45亿年，90%时间没有冰盖',color:'fish'},
+ 'gulf-land':{kind:'bigword',word:'六七个台湾',sub:'波斯湾曾是一大块裸露陆地',color:'gold'},
+ 'cold':{kind:'bigword',word:'气温骤降',sub:'沙漠越来越干',color:'fish'},
+ 'pre-civ':{kind:'bigword',word:'前文明',sub:'顶尖技术凑一块儿炼出来',color:'gold'},
+ 'flood78':{kind:'bigword',word:'78倍',sub:'水量是米苏拉湖的78倍 能淹中国17米',color:'red',num:'78倍'},
+ 'flood-gods':{kind:'bigword',word:'众神被冲得狼狈',sub:'洪水退后还能跟人类生孩子',color:'red'},
+ 'preciv':{kind:'bigword',word:'众神=前文明',sub:'科技比人类高一大截',color:'gold'},
+ 'yd':{kind:'bigword',word:'新仙女木事件',sub:'一万两千九百年前',color:'fish'},
+ 'drought300':{kind:'bigword',word:'三百年超级干旱',sub:'苏美尔文明最终灭亡',color:'red'},
+ 'genius':{kind:'center',sp:'linguist',word:'一位语言天才',sub:'连推三步，推成大瓜',color:'gold',sats:['第一步','第二步','第三步']},
+ 'boat-civ':{kind:'center',sp:'boat',word:'精通航海的高等文明',sub:'驾着船',color:'fish',sats:['文字','灌溉','技术']},
+ 'landing':{kind:'center',sp:'ziggurat',sp2:'farmer',word:'在苏美尔登陆',sub:'一群科技先进的人',color:'gold'},
+ 'no-older':{kind:'center',sp:'ross',word:'家在哪？',sub:'压根没挖到更老的文明',color:'red',sats:['考古界','没挖到']},
+ 'oasis-guess':{kind:'center',sp:'spring',sp2:'rivers',word:'沙漠里的巨大绿洲',sub:'波斯湾以前根本不是海',color:'teal'},
+ 'flood-flee':{kind:'center',sp:'boat',word:'驾船逃上美索不达米亚',sub:'家园一夜被海水吞没',color:'fish'},
+ 'language1':{kind:'center',sp:'linguist',word:'苏美尔语没有亲缘',sub:'和世界上任何语言都不像',color:'teal'},
+ 'dilmun':{kind:'center',sp:'spring',word:'迪尔蒙＝巴林岛',sub:'祖先的天堂岛',color:'gold',sats:['天堂岛','巴林岛']},
+ 'ghost':{kind:'center',sp:'dna',word:'幽灵人群',sub:'2021年从基因里硬算出',color:'fish',sats:['走出非洲','独自藏了']},
+ 'neanderthal':{kind:'center',sp:'dna',word:'尼人血统几乎为零',sub:'基因比例当探针一照',color:'fish'},
+ 'rivers':{kind:'center',sp:'rivers',word:'四条大河汇入',sub:'两条还在，两条早干了',color:'teal',sats:['两条还在','两条干了']},
+ 'ross':{kind:'center',sp:'ross',word:'考古学家罗斯',sub:'2010年接了这案子',color:'gold'},
+ 'ice-bank':{kind:'center',sp:'ice',word:'冰盖＝水银行',sub:'冰越厚，海平面越低',color:'fish'},
+ 'lgm':{kind:'center',sp:'ice',word:'劳伦泰德冰盖',sub:'三公里厚 末次冰盛期',color:'fish',sats:['三公里厚','末次冰盛期']},
+ 'geology':{kind:'center',sp:'kish',word:'碳酸盐岩＋高原',sub:'底部储水，无数泉眼',color:'sand'},
+ 'springs':{kind:'center',sp:'spring',word:'无数泉眼往上冒',sub:'巴林＝阿拉伯语两头海',color:'teal',sats:['两头海','淡水不缺']},
+ 'oasis-was':{kind:'center',sp:'rivers',sp2:'spring',word:'大河汇入的绿洲',sub:'这地方过去真是片绿洲',color:'teal'},
+ 'genesis':{kind:'center',sp:'priest',word:'苏美尔人的创世纪',sub:'众神早知道洪水要来',color:'gold'},
+ 'predicted':{kind:'center',sp:'enki',word:'算得出，拦不住',sub:'算得出基什山要崩',color:'red',sats:['大限将至','拦不住']},
+ 'enki':{kind:'center',sp:'enki',word:'智慧之神恩基',sub:'只有他泄了密',color:'gold'},
+ 'ark':{kind:'center',sp:'ark',word:'人类造了方舟',sub:'逃过一劫',color:'teal'},
+ 'hood6500':{kind:'center',sp:'hood',sp2:'farmer',word:'穿着鱼头装去两河',sub:'教新居民种地盖庙写字',color:'fish',sats:['6500年前','种地盖庙写字']},
+ 'black-tech':{kind:'center',sp:'ziggurat',sp2:'plow',word:'一出生满身黑科技',sub:'苏美尔文明诞生',color:'gold'},
+ 'kinglist':{kind:'center',sp:'kinglist',word:'邪门的苏美尔王表',sub:'洪水前国王在位几万年',color:'gold'},
+ 'step2':{kind:'question',word:'家在哪？'},
+ 'flood-q':{kind:'question',word:'怎么灌没的？',sub:'那么大一片绿洲'},
+ 'unknown':{kind:'question',word:'凭什么减弱？',sub:'没人说得清'},
+ 'your-eden':{kind:'question',word:'谁的伊甸园？',sub:'我们站的地方以后会变成吗'},
+ 'tech-pack':{kind:'row3',items:['驾着船','成熟文字','灌溉技术']},
+ 'city-names':{kind:'row3',items:['乌尔','乌鲁克','埃利都']},
+ 'agri-words':{kind:'row3sp',items:[{lb:'犁',sp:'plow'},{lb:'农夫',sp:'farmer'},{lb:'播种',sp:'seedbasket'}]},
+ 'gulf35':{kind:'duo',a:{num:'120米',lb:'冰期海平面',sub:'比现在低'},b:{num:'35米',lb:'波斯湾水深',sub:'平均'},q:'对比'},
+ 'bible':{kind:'duo',a:{sp:'kinglist',lb:'苏美尔记载',sub:'洪水故事'},b:{sp:'ark',lb:'圣经',sub:'几乎一模一样'},q:'早1000年'},
+ 'memory':{kind:'duo',a:{lb:'洪水前',sub:'国王在位几万年'},b:{sp:'kinglist',lb:'洪水后',sub:'变回几十年正常'},q:'一条线'},
+ 'ghost-hide':{kind:'timeline',nodes:[{lb:'6万年前',sub:'走出非洲'},{lb:'分道扬镳',sub:'幽灵人群'},{lb:'藏5万年',sub:'没留下遗骸'}],tail:'波斯湾沿岸尼人血统几乎为零'},
+};
+// 专属 kind 映射
+const SPECIAL_KINDS={
+ 'teach4':(cfg,sc,t,tl)=>scTeach4(sc,t,tl),
+ 'nightsea':(cfg,sc,t,tl)=>scNightsea(sc,t,tl),
+ 'shuttle':(cfg,sc,t,tl)=>scShuttle(sc,t,tl),
+ 'sea120':(cfg,sc,t,tl)=>scSea({variant:'down'},sc,t,tl),
+ 'sea-jump':(cfg,sc,t,tl)=>scSea({variant:'jump'},sc,t,tl),
+ 'rise70':(cfg,sc,t,tl)=>scSea({variant:'up'},sc,t,tl),
+ 'amoc-cut':(cfg,sc,t,tl)=>scAmoc({variant:'cut'},sc,t,tl),
+ 'amoc-again':(cfg,sc,t,tl)=>scAmoc({variant:'weak'},sc,t,tl),
+ 'gather':(cfg,sc,t,tl)=>scGather(sc,t,tl),
+ 'alchemy':(cfg,sc,t,tl)=>scAlchemy(sc,t,tl),
+ 'burst8200':(cfg,sc,t,tl)=>scFlood({variant:'burst'},sc,t,tl),
+ 'kish-break':(cfg,sc,t,tl)=>scFlood({variant:'kish'},sc,t,tl),
+ 'gulf-born':(cfg,sc,t,tl)=>scFlood({variant:'born'},sc,t,tl),
+ 'after-flood':(cfg,sc,t,tl)=>scAfterFlood(sc,t,tl),
+ 'endcard':(cfg,sc,t,tl)=>scEndcard(sc,t,tl),
+};
+function renderGeneric(cfg,sc,t,tl){
+  if(SPECIAL_KINDS[cfg.kind]){SPECIAL_KINDS[cfg.kind](cfg,sc,t,tl);return;}
+  if(cfg.kind==='bigword')scBigWord(cfg,sc,t,tl);
+  else if(cfg.kind==='center')scCenter(cfg,sc,t,tl);
+  else if(cfg.kind==='row3')scRow3(cfg,sc,t,tl);
+  else if(cfg.kind==='row3sp')scRow3sp(cfg,sc,t,tl);
+  else if(cfg.kind==='duo')scDuo(cfg,sc,t,tl);
+  else if(cfg.kind==='timeline')scTimeline(cfg,sc,t,tl);
+  else if(cfg.kind==='question')scQuestion2(cfg,sc,t,tl);
+}
+
+// ---------- 主渲染 ----------
+const SEA_TYPES=['sea120','sea-jump','rise70','burst8200','kish-break','gulf-born','nightsea','after-flood','flood-flee','boat-civ','gulf35'];
+const SEG=[[0,184,115,51],[8.6,127,168,201],[28,78,139,139],[78,232,184,75],[115,127,168,201],
+ [158,201,107,61],[190,232,184,75],[225,78,139,139],[258,127,168,201]];
+function render(t){
+  QC.moving.clear();QC.acts=[];QC.textRects=[];QC.subRect=null;QC.fgRects=[];
+  ctx.setTransform(1,0,0,1,0,0);
+  const sc=sceneByT(t);
+  const tl=t-sc.s;
+  // 分段主题色
+  let s0=SEG[0],s1=SEG[1];
+  for(let i=0;i<SEG.length-1;i++){if(t>=SEG[i][0]&&t<SEG[i+1][0]){s0=SEG[i];s1=SEG[i+1];break;}}
+  if(t>=SEG[SEG.length-1][0]){s0=s1=SEG[SEG.length-1];}
+  const k=s0===s1?1:clamp((t-s0[0])/(s1[0]-s0[0]),0,1);
+  theme.r=s0[1]+(s1[1]-s0[1])*k;theme.g=s0[2]+(s1[2]-s0[2])*k;theme.b=s0[3]+(s1[3]-s0[3])*k;theme.a=0.10;
+  bgBase(t);bgParticles(t);bgTheme(t);
+  bgStage(t,SEA_TYPES.includes(sc.type)?'sea':'a');
+  try{
+    ctx.save();
+    const name=sc.type;
+    if(name==='statues-hook')scStatuesHook(sc,t,tl);
+    else if(name==='pope-robe')scPopeRobe(sc,t,tl);
+    else if(name==='fish-skin')scFishSkin(sc,t,tl);
+    else if(name==='sumer-time')scSumerTime(sc,t,tl);
+    else if(name==='call-god')scCallGod(sc,t,tl);
+    else if(name==='how-from')scHowFrom(sc,t,tl);
+    else if(name==='oannes-reveal')scOannesReveal(sc,t,tl);
+    else if(name==='endcard')scEndcard(sc,t,tl);
+    else{
+      let cfg=TYPE_CFG[name];
+      if(!cfg && SPECIAL_KINDS[name])cfg={kind:name};
+      if(cfg)renderGeneric(cfg,sc,t,tl);
+      else window.__miss=(window.__miss||[]),(window.__miss.indexOf(name)<0&&window.__miss.push(name));
+    }
+    ctx.restore();
+  }catch(e){window.__err=(window.__err||[]);if(window.__err.length<20)window.__err.push(t.toFixed(2)+': '+String(e));ctx.restore();}
+  for(const kk in TRANS){const c=+kk;const dt=t-c;if(dt<0||dt>0.4)continue;
+    const ty=TRANS[kk][0],col=TRANS[kk][1];
+    if(ty==='dip')dip(t,c);else if(ty==='veil')veil(t,c,col);else if(ty==='softFlash')softFlash(t,c,col);
+    else if(ty==='softWipe')softWipe(t,c,col);else if(ty==='softIris')softIris(t,c);}
+  const sub=subAt(t);
+  if(sub)subBar(sub);
+  ctx.save();ctx.font='500 32px "Microsoft YaHei"';ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('@徐艾伦',W-44,34);ctx.restore();
+  const pr=clamp(t/SB.total,0,1);
+  ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(0,H-6,W,6);
+  ctx.fillStyle=COL.gold;ctx.fillRect(0,H-6,W*pr,6);mv('progress');
+  if(t>SB.total-0.6){ctx.fillStyle='#000';ctx.globalAlpha=(t-(SB.total-0.6))/0.6;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+  QC.moving.add('watermark');QC.acts.push('scene:'+sc.type);
+  if(sc.s>0)QC.acts.push('cut:'+sc.type);
+}
+window.__ready=function(){return loaded>=need;};
+window.renderFrame=function(i){render(i/30);return {t:i/30,moving:[...QC.moving],acts:QC.acts,textRects:QC.textRects,subRect:QC.subRect,fgRects:QC.fgRects};};
+render(0);
+</script></body></html>

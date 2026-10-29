@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#000;}</style></head>
+<body>
+<canvas id="cv" width="1920" height="1080"></canvas>
+<script src="zhouwang_full_sb.js"></script>
+<script>
+// ================= 周幽王 20秒样片渲染页（西周金红色板 + 动漫透明素材 + 代码绘制宫殿/远山背景） =================
+const W=1920,H=1080;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const SB=window.SB;
+const COL={bg:'#120A0A',bgA:'#1E1010',gold:'#E8B84B',goldD:'#9A7524',red:'#C0392B',redD:'#7B241C',
+ cream:'#F3EAD3',ink:'#0A0606',jade:'#5E9B8A',grey:'#7A6A6A',white:'#FFFFFF',copper:'#B87333'};
+
+// ---------- 资产（周幽王素材_动漫_v1 透明PNG） ----------
+const AB='D:/@kaifa/yandi/output/周幽王/素材_动漫_v1/';
+const ASSETS={
+ 'baosi':AB+'人物/褒姒_主形象_v5_透明.png',
+ 'king':AB+'人物/周幽王_动漫_v1_透明.png',
+ 'zhuhou':AB+'人物/诸侯将领_动漫_v1_透明.png',
+ 'rong':AB+'人物/犬戎首领_动漫_v1_透明.png',
+ 'baoguo':AB+'人物/褒国使者_动漫_v1_透明.png',
+ 'beacon':AB+'道具/烽火台_动漫_v1_透明.png',
+ 'fire':AB+'道具/烽火烟火_动漫_v1_透明.png',
+ 'throne':AB+'道具/王座_动漫_v1_透明.png',
+ 'crown':AB+'道具/冠冕_动漫_v1_透明.png',
+ 'warflag':AB+'道具/战旗_动漫_v1_透明.png',
+ 'dagger':AB+'道具/铜戈_动漫_v1_透明.png',
+ 'edict':AB+'道具/废立诏书_动漫_v1_透明.png',
+ 'moxi':AB+'人物/妺喜_动漫_v1_透明.png',
+ 'daji':AB+'人物/妲己_动漫_v1_透明.png',
+ 'shenhou':AB+'人物/申侯_动漫_v1_透明.png',
+ 'yijiu':AB+'人物/宜臼_动漫_v1_透明.png',
+};
+const BGIMG='D:/@kaifa/yandi/output/006_女娲/背景图_v1/bg10_layeredpeaks.png';
+const IMGS={};let loaded=0;const need=Object.keys(ASSETS).length+1;
+function fileUrl(p){return 'file:///'+p.split('/').map(encodeURIComponent).join('/');}
+for(const k in ASSETS){const im=new Image();im.onload=()=>{loaded++;};im.onerror=()=>{loaded++;console.log('MISS',k,ASSETS[k]);};im.src=fileUrl(ASSETS[k]);IMGS[k]=im;}
+const bgIm=new Image();bgIm.onload=()=>{loaded++;};bgIm.onerror=()=>{loaded++;console.log('MISS bg');};bgIm.src=fileUrl(BGIMG);
+function img(k){return (IMGS[k]&&IMGS[k].complete&&IMGS[k].naturalWidth)?IMGS[k]:null;}
+function sprite(k,x,y,h,o){o=o||{};const im=img(k);if(!im)return;
+  const iw=im.naturalWidth, ih=im.naturalHeight;
+  const w=h*iw/ih; // 按原图宽高比，以高度h等比缩放，不压扁
+  ctx.save();
+  ctx.globalAlpha=o.alpha==null?1:o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);
+  if(o.flip)ctx.scale(-1,1);const s=o.scale||1;ctx.scale(s,s);
+  if(o.filter&&ctx.filter!==undefined)ctx.filter=o.filter;
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore();
+  QC.fgRects.push([x-w/2*(o.scale||1),y-h/2*(o.scale||1),w*(o.scale||1),h*(o.scale||1)]);}
+
+// ---------- QC 仪表 ----------
+const QC={moving:new Set(),acts:[],textRects:[],subRect:null,fgRects:[]};
+function mv(id){QC.moving.add(id);}
+function tRect(x,y,w,h){QC.textRects.push([x,y,w,h]);}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function eob(t){if(t<=0)return 0;const c=1.70158;const x=t-1;return 1+(c+1)*x*x*x+c*x*x;}
+function eoe(t){if(t<=0)return 0;return t>=1?1:1-Math.pow(2,-10*t);}
+function eio(t){if(t<=0)return 0;return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+function rnd(seed){const x=Math.sin(seed*127.1+311.7)*43758.5453;return x-Math.floor(x);}
+
+// ---------- 背景四层（bg10 群峰叠嶂图片底层 + 炎帝同款运镜/动态） ----------
+let theme={r:192,g:57,b:43,a:0.10}; // 烽火红 → 金（褒姒登场过渡）
+// bg10 运镜：横移与推拉交替，缓慢正弦，zoom 基线 1.09 保证平移不出界（炎帝同款参数）
+function camAt(t){
+  const panX=Math.sin(t*Math.PI/26)*42;                    // 左右横移全周期52s
+  const panY=Math.sin(t*Math.PI/47+1.2)*14;                // 纵向微漂
+  const zoom=1.09+Math.cos(t*Math.PI/19)*0.03;             // 推拉全周期38s（与横移错拍交替）
+  return {panX,panY,zoom};
+}
+function bgBase(t){ // 层1：bg10 aspect-fill 居中裁切 + 缓慢运镜
+  if(bgIm.complete&&bgIm.naturalWidth){
+    const ir=bgIm.naturalWidth/bgIm.naturalHeight,rr=W/H;
+    let sw,sh,sx,sy;
+    if(ir>rr){sh=bgIm.naturalHeight;sw=sh*rr;sx=(bgIm.naturalWidth-sw)/2;sy=0;}
+    else{sw=bgIm.naturalWidth;sh=sw/rr;sx=0;sy=(bgIm.naturalHeight-sh)/2;}
+    const c=camAt(t),m=(c.zoom-1)/2;
+    const ox=clamp(c.panX,-W*m,W*m),oy=clamp(c.panY,-H*m,H*m);
+    ctx.save();ctx.translate(W/2+ox,H/2+oy);ctx.scale(c.zoom,c.zoom);ctx.translate(-W/2,-H/2);
+    ctx.drawImage(bgIm,sx,sy,sw,sh,0,0,W,H);ctx.restore();
+    mv('bg-cam');
+  }else{ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);}
+}
+function bgDust(t){ // 层2：微动氛围（炎帝同款白色浮尘）
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  for(let i=0;i<44;i++){const px=(rnd(i)*W+t*(14+rnd(i+7)*26))%W;const py=(rnd(i+3)*H+t*(8+rnd(i+11)*18))%H;
+    const s=1+rnd(i+5)*2.4;ctx.fillRect(px,py,s,s);}
+  mv('bg-particles');
+}
+function bgTheme(t){ // 层3：主题色脉冲
+  const pulse=0.75+0.25*Math.sin(t*0.8);
+  ctx.fillStyle='rgba('+theme.r+','+theme.g+','+theme.b+','+(theme.a*pulse).toFixed(3)+')';
+  ctx.fillRect(0,0,W,H);
+  mv('bg-theme');
+}
+function bgStage(t){ // 层4：动态山脊（炎帝同款双层波浪山，避让924字幕线）
+  const sp=0.55;
+  for(let L=0;L<2;L++){
+    const amp=36+L*24,yb=H*(L===0?0.80:0.90),spd=(L===0?9:22)*sp;
+    ctx.fillStyle=L===0?'rgba(50,32,24,0.45)':'rgba(10,6,6,0.85)';
+    ctx.beginPath();ctx.moveTo(0,H);
+    for(let x=0;x<=W;x+=24){const y=yb+Math.sin((x+t*spd)*0.0016+L*2.1)*amp+Math.sin((x+t*spd*0.6)*0.004+L)*amp*0.35;ctx.lineTo(x,y);}
+    ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  }
+  mv('bg-stage');
+}
+
+// ---------- 文字 ----------
+function bigText(text,x,y,size,color,outline,rot,scale,align){
+  if(typeof text!=='string'){window.__badText=(window.__badText||[]);if(window.__badText.length<10)window.__badText.push(String(text));text=String(text);}
+  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);if(scale)ctx.scale(scale,scale);
+  ctx.font='900 '+size+'px "Microsoft YaHei"';ctx.textAlign=align||'center';ctx.textBaseline='middle';
+  const tw=ctx.measureText(text).width;
+  const ax=align==='left'?0:(align==='right'?-tw/2:0);
+  if(outline){ctx.lineWidth=size*0.12;ctx.strokeStyle=outline;ctx.lineJoin='round';ctx.strokeText(text,ax,0);}
+  ctx.fillStyle=color;ctx.fillText(text,ax,0);ctx.restore();
+  tRect(x-(align==='left'?0:tw/2)-size*0.1,y-size*0.62,tw+size*0.2,size*1.24);
+}
+// ---------- 字幕（底部条 + 关键词金色高亮） ----------
+const ACC_KEYS=['褒姒','烽火','诸侯','犬戎','西周','亡了','笑','褒国','姓姒','周幽王','三千年前'];
+function subBar(text){
+  ctx.save();
+  ctx.font='900 64px "Microsoft YaHei"';
+  const tw=ctx.measureText(text).width;
+  const bx=W/2-tw/2-38,by=H-156,bw=tw+76,bh=100;
+  ctx.fillStyle='rgba(0,0,0,0.66)';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle=COL.gold;ctx.fillRect(bx,by,7,bh);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=9;ctx.strokeStyle='#000';
+  const acc=ACC_KEYS.find(k=>text.includes(k));
+  let x=W/2-tw/2;
+  for(const chr of text){
+    const w=ctx.measureText(chr).width;
+    const inAcc=acc&&acc.includes(chr);
+    ctx.strokeText(chr,x+w/2,by+bh/2+3);
+    ctx.fillStyle=inAcc?COL.gold:'#fff';
+    ctx.fillText(chr,x+w/2,by+bh/2+3);
+    x+=w;
+  }
+  ctx.restore();
+  QC.subRect=[bx,by,bw,bh];tRect(bx,by,bw,bh);
+}
+function card(x,y,w,h,o){o=o||{};ctx.save();
+  if(o.alpha!=null)ctx.globalAlpha=o.alpha;ctx.translate(x,y);if(o.rot)ctx.rotate(o.rot);const s=o.scale||1;ctx.scale(s,s);
+  ctx.fillStyle=o.fill||'rgba(255,255,255,0.055)';ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.fill();
+  if(o.stroke){ctx.strokeStyle=o.stroke;ctx.lineWidth=o.lw||3;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,o.r||24);ctx.stroke();}
+  ctx.restore();
+  if(!o.noQC)QC.fgRects.push([x-w/2*s,y-h/2*s,w*s,h*s]);}
+function chip(x,y,text,color,t0,t,size){const p=eob(clamp((t-t0)/0.35,0,1));if(p<=0)return;
+  ctx.save();ctx.font='900 '+(size||52)+'px "Microsoft YaHei"';const tw=ctx.measureText(text).width;
+  card(x,y,tw+56,size+34,{stroke:color,lw:3,scale:p,fill:'rgba(255,255,255,0.07)'});
+  bigText(text,x,y,size||52,color,null,0,p);mv('chip-'+text+t0);ctx.restore();}
+function glow(x,y,r,color,a){ctx.save();const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,color.replace('A',a.toFixed(3)));g.addColorStop(1,color.replace('A','0'));
+  ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore();}
+function glowRim(x,y,r,t,col){col=col||'rgba(232,184,75,';
+  const pr=r*(1+0.03*Math.sin(t*2.2));
+  ctx.save();const g=ctx.createRadialGradient(x,y,pr*0.2,x,y,pr);
+  g.addColorStop(0,col+'0.32)');g.addColorStop(1,col+'0)');
+  ctx.fillStyle=g;ctx.fillRect(x-pr,y-pr,pr*2,pr*2);ctx.restore();mv('rim'+(x|0));}
+
+// ---------- 转场 ----------
+function dip(t,cut){const dt=t-cut;if(dt>=0&&dt<0.3){const a=Math.sin(Math.PI*dt/0.3);ctx.fillStyle=COL.bg;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function veil(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const a=Math.sin(Math.PI*dt/0.32)*0.30;ctx.fillStyle=color;ctx.globalAlpha=a;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}}
+function softWipe(t,cut,color){const dt=t-cut;if(dt>=0&&dt<0.32){const p=eio(dt/0.32);ctx.fillStyle=color;ctx.globalAlpha=0.5;ctx.fillRect(-140+p*(W+280),0,140,H);ctx.globalAlpha=1;}}
+const TRANS_KINDS=['dip','veil','softWipe'];
+const TRANS={};let kidx=0;
+for(const sc of SB.scenes){if(sc.s<=0)continue;
+  const r=TRANS_KINDS[kidx%TRANS_KINDS.length];TRANS[sc.s.toFixed(3)]=[r,COL.redD];kidx++;}
+
+// ---------- 场景 ----------
+function sceneByT(t){for(const s of SB.scenes){if(t>=s.s&&t<s.e)return s;}return SB.scenes[SB.scenes.length-1];}
+function subAt(t){for(const s of SB.subs){if(t>=s[0]&&t<s[1])return s[2];}return '';}
+
+// S1 最贵的笑（钩子大字）
+function scHookSmile(sc,t,tl){
+  // 巨大笑字
+  const p=eob(clamp(tl/0.5,0,1));
+  glow(960,460,420,'rgba(232,184,75,A)',0.30);
+  bigText('笑',960,460,360,COL.gold,COL.redD,Math.sin(t*1.5)*0.03,p);mv('big-smile');
+  // 顶部标签
+  chip(960,150,'历史上最贵的一个笑',COL.cream,0.15,t,60);
+  // 周围金光粒子
+  for(let i=0;i<14;i++){const a=t*0.8+i*0.45,r=360+Math.sin(t*1.3+i)*30;
+    const px=960+Math.cos(a)*r,py=460+Math.sin(a)*r*0.7;
+    ctx.fillStyle='rgba(232,184,75,'+(0.4+0.3*Math.sin(t*3+i)).toFixed(3)+')';
+    ctx.beginPath();ctx.arc(px,py,5+((i%3)),0,7);ctx.fill();mv('spark'+i);}
+  // 底部暗示"值一个王朝"小芯片（场景0秒就是这句）
+  chip(960,760,'值一个王朝',COL.red,0.05,t,58);
+  mv('hook-smile');
+}
+
+// S2 褒姒登场
+function scBaosiIntro(sc,t,tl){
+  const ry=eob(clamp(tl/0.5,0,1));
+  const yy=H-150-(H-150-560)*ry;
+  glowRim(960,yy,360,t,'rgba(232,184,75,');
+  sprite('baosi',960,yy+Math.sin(t*1.3)*7,560,{alpha:0.99,scale:ry});mv('baosi');
+  // 名牌
+  const p2=eob(clamp((tl-0.3)/0.4,0,1));
+  if(p2>0){card(960,150,520,180,{stroke:COL.gold,scale:p2,fill:'rgba(232,184,75,0.18)'});
+    bigText('褒姒',960,150,110,COL.cream,COL.goldD,0,p2);mv('namecard');}
+  // 左右芯片
+  if(tl>0.9)chip(430,820,'不爱笑',COL.red,0.9,t,56);
+  if(tl>1.3)chip(1490,820,'战利品',COL.gold,1.3,t,56);
+  // 光环扩散
+  const ring=clamp(tl/1.2,0,1);
+  ctx.save();ctx.strokeStyle='rgba(232,184,75,'+(0.5*(1-ring)).toFixed(3)+')';ctx.lineWidth=8;
+  ctx.beginPath();ctx.arc(960,yy,140+ring*460,0,7);ctx.stroke();ctx.restore();mv('ring');
+  mv('baosi-intro');
+}
+
+// S3 三千年前周幽王
+function scKingHistory(sc,t,tl){
+  // 大字三千年前
+  const p1=eob(clamp(tl/0.4,0,1));
+  bigText('三千年前',960,160,120,COL.gold,COL.ink,0,p1);mv('3000');
+  // 周幽王左侧 + 王座
+  const kp=eob(clamp((tl-0.2)/0.45,0,1));
+  if(kp>0){glowRim(600,600,300,t,'rgba(192,57,43,');
+    sprite('king',600,610+Math.sin(t*1.2)*7,460,{alpha:0.98,scale:kp});mv('king');
+    sprite('throne',600,780,300,{alpha:0.9,scale:kp});mv('throne');}
+  // 褒姒右侧小像
+  const bp=eob(clamp((tl-0.6)/0.4,0,1));
+  if(bp>0)sprite('baosi',1380,660,300,{alpha:0.85,scale:bp});mv('baosi-small');
+  // 逗她笑的标签
+  if(tl>0.9)chip(960,330,'周幽王想尽办法逗她笑',COL.cream,0.9,t,56);
+  mv('king-history');
+}
+
+// S4 点了烽火 骗了诸侯
+function scBeaconLit(sc,t,tl){
+  // 烽火台居中偏左
+  const bp=eob(clamp(tl/0.4,0,1));
+  if(bp>0){sprite('beacon',700,660,480,{alpha:0.98,scale:bp});mv('beacon');
+    // 火焰跳动
+    const fl=1+0.08*Math.sin(t*9)+0.05*Math.sin(t*17);
+    sprite('fire',700,360,260*fl,{alpha:0.95,rot:Math.sin(t*6)*0.06});mv('fire');
+    glow(700,380,260,'rgba(192,57,43,A)',0.4);}
+  // 诸侯从右侧跑来（剪影连跑带颠）
+  const zp=eob(clamp((tl-0.3)/0.5,0,1));
+  if(zp>0){
+    for(let i=0;i<3;i++){
+      const runX=1150+i*180 - tl*120*(i+1)*0.3;
+      sprite('zhuhou',runX,720+Math.sin(t*8+i*2)*10,280-i*30,{alpha:0.92-i*0.12,scale:zp,rot:Math.sin(t*8+i)*0.08});
+      mv('zhuhou'+i);}
+  }
+  chip(960,150,'点了烽火',COL.red,0.2,t,64);
+  if(tl>0.8)chip(1300,820,'骗诸侯白跑一趟',COL.gold,0.8,t,54);
+  mv('beacon-lit');
+}
+
+// S5 犬戎真打来了
+function scRongComes(sc,t,tl){
+  // 主题切红
+  const ry=clamp(tl/0.6,0,1);
+  // 犬戎首领右侧冲进来
+  const rp=eob(clamp(tl/0.4,0,1));
+  if(rp>0){glowRim(1300,560,320,t,'rgba(192,57,43,');
+    sprite('rong',1300,580+Math.sin(t*2)*10,520,{alpha:0.99,scale:rp,rot:Math.sin(t*3)*0.06,flip:false});mv('rong');
+    sprite('warflag',1560,560,360,{alpha:0.9,scale:rp,rot:Math.sin(t*4)*0.12});mv('warflag');}
+  // 左侧烽火台还在烧 但没人来
+  sprite('beacon',500,700,360,{alpha:0.7});mv('beacon-left');
+  const fl2=1+0.06*Math.sin(t*7);
+  sprite('fire',500,480,180*fl2,{alpha:0.7});mv('fire-left');
+  // 红色紧张扫描
+  ctx.save();ctx.globalAlpha=0.12+0.08*Math.sin(t*6);
+  ctx.fillStyle=COL.red;ctx.fillRect(0,0,W,H);ctx.restore();mv('redpulse');
+  chip(960,150,'犬戎真打来了',COL.red,0.15,t,64);
+  if(tl>1.5)chip(500,840,'再点烽火 没人信了',COL.cream,1.5,t,52);
+  mv('rong-comes');
+}
+
+// S6 西周亡了
+function scWestDead(sc,t,tl){
+  // 整体压暗
+  ctx.fillStyle='rgba(0,0,0,'+clamp(tl*0.5,0,0.6).toFixed(2)+')';ctx.fillRect(0,0,W,H);
+  const p=eob(clamp(tl/0.5,0,1));
+  glow(960,480,380,'rgba(123,36,28,A)',0.4);
+  bigText('西周亡了',960,480,220,COL.red,COL.ink,Math.sin(t*1.2)*0.02,p);mv('west-dead');
+  // 倒下的战旗
+  const fp=clamp(tl/1.2,0,1);
+  sprite('warflag',960,820,360,{alpha:0.7,rot:0.5*fp+Math.sin(t)*0.02});mv('flag-fall');
+  chip(960,150,'公元前771年',COL.gold,0.3,t,58);
+  mv('west-dead');
+}
+
+// S7 从小听到大/今天想讲
+function scFamiliarTale(sc,t,tl){
+  // 废立诏书/竹简感（用 edict 当"故事书"）
+  const ep=eob(clamp(tl/0.4,0,1));
+  if(ep>0){sprite('edict',600,560,420,{alpha:0.9,scale:ep,rot:-0.12});mv('edict');}
+  // 大字"从小听到大"
+  bigText('这个故事',960,200,110,COL.cream,COL.ink,0,eob(clamp(tl/0.3,0,1)));mv('familiar');
+  // 后半"但我今天想讲的"
+  if(tl>1.6){
+    const qp=eob(clamp((tl-1.6)/0.4,0,1));
+    bigText('但今天讲点别的',1100,480,90,COL.gold,COL.ink,0,qp);mv('but-today');
+    sprite('baosi',1450,620,320,{alpha:0.9*qp,scale:qp});mv('baosi-hint');
+  }
+  mv('familiar-tale');
+}
+
+// S8 不是这个笑话
+function scNotJoke(sc,t,tl){
+  // 巨大"笑话"被划叉
+  const p=eob(clamp(tl/0.3,0,1));
+  bigText('笑话',960,460,260,'#5a4a4a',COL.ink,0,p);mv('joke');
+  // 红色大叉划掉
+  const cp=clamp((tl-0.25)/0.5,0,1);
+  if(cp>0){ctx.save();ctx.strokeStyle=COL.red;ctx.lineWidth=22;ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(700,280);ctx.lineTo(700+520*cp,640);
+    ctx.moveTo(1220,280);ctx.lineTo(1220-520*cp,640);
+    ctx.stroke();ctx.restore();mv('cross');}
+  chip(960,160,'不是这个笑话',COL.red,0.2,t,64);
+  mv('not-joke');
+}
+
+// S9 是这个笑的主人 褒姒这个人（特写收尾）
+function scHerFace(sc,t,tl){
+  const ry=eob(clamp(tl/0.5,0,1));
+  glow(960,540,420,'rgba(232,184,75,A)',0.32);
+  sprite('baosi',960,580+Math.sin(t*1.2)*6,620,{alpha:0.99,scale:ry});mv('baosi-face');
+  // 大名牌
+  const p2=eob(clamp((tl-0.2)/0.4,0,1));
+  if(p2>0){card(960,150,640,180,{stroke:COL.gold,scale:p2,fill:'rgba(232,184,75,0.2)'});
+    bigText('褒姒这个人',960,150,100,COL.cream,COL.goldD,0,p2);mv('face-card');}
+  // 她只是不想笑给你看
+  if(tl>0.9)chip(960,860,'她不是不会笑',COL.cream,0.9,t,56);
+  mv('her-face');
+}
+
+// S10 褒姒姓姒 褒国女子
+function scBaoguoGirl(sc,t,tl){
+  // 褒国使者左侧
+  const gp=eob(clamp(tl/0.4,0,1));
+  if(gp>0){sprite('baoguo',560,600,440,{alpha:0.95,scale:gp});mv('baoguo');}
+  // 褒姒小像右侧
+  sprite('baosi',1380,620,380,{alpha:0.9,scale:eob(clamp((tl-0.2)/0.4,0,1))});mv('baosi2');
+  // 两个芯片：褒=国 姒=姓
+  if(tl>0.5)chip(560,200,'褒 = 国',COL.gold,0.5,t,60);
+  if(tl>0.9)chip(1380,200,'姒 = 姓',COL.cream,0.9,t,60);
+  if(tl>1.0)bigText('褒国的女子',960,360,90,COL.cream,COL.ink,0,eob(clamp((tl-1.0)/0.4,0,1)));mv('baoguo-word');
+  mv('baoguo-girl');
+}
+
+// S10 她是谁（疑问大字）
+function scWhoIsShe(sc,t,tl){
+  const p=eob(clamp(tl/0.35,0,1));
+  glow(960,480,360,'rgba(232,184,75,A)',0.25);
+  bigText('她是谁',960,460,200,COL.cream,COL.ink,Math.sin(t*2.5)*0.03,p);mv('who');
+  const qp=eob(clamp((tl-0.25)/0.3,0,1));
+  if(qp>0)bigText('?',1380,340,160,COL.gold,COL.redD,Math.sin(t*4)*0.06,qp);mv('qmark');
+  mv('who-is-she');
+}
+
+// S11 周幽王三年 出兵打褒国
+function scWarBaoguo(sc,t,tl){
+  // 周幽王右侧 + 铜戈 + 战旗（出征）
+  const kp=eob(clamp(tl/0.4,0,1));
+  if(kp>0){glowRim(1250,560,320,t,'rgba(192,57,43,');
+    sprite('king',1250,600+Math.sin(t*1.3)*8,500,{alpha:0.98,scale:kp});mv('king-war');
+    sprite('crown',1250,330,200,{alpha:0.95,scale:kp});mv('crown');
+    sprite('warflag',1560,560,340,{alpha:0.9,scale:kp,rot:Math.sin(t*5)*0.1});mv('warflag2');
+    sprite('dagger',900,700,300,{alpha:0.9,scale:kp,rot:-0.3});mv('dagger');}
+  // 左侧褒国使者（被打）
+  sprite('baoguo',500,660,360,{alpha:0.8,rot:Math.sin(t*2)*0.05});mv('baoguo-side');
+  chip(960,150,'周幽王三年',COL.gold,0.15,t,64);
+  if(tl>0.7)chip(960,840,'出兵打了褒国',COL.red,0.7,t,56);
+  mv('war-baoguo');
+}
+
+// S12 褒=国 姒=姓
+function scBaoguoName(sc,t,tl){
+  chip(480,260,'褒 = 国',COL.gold,0.1,t,80);
+  chip(1440,260,'姒 = 姓',COL.cream,0.5,t,80);
+  bigText('出身褒国',960,560,110,COL.cream,COL.ink,0,eob(clamp(tl/0.4,0,1)));
+  mv('baoguo-name');
+}
+// S13 献姑娘（褒国使者献褒姒）
+function scTribute(sc,t,tl){
+  sprite('baoguo',520,640,420,{alpha:0.9,scale:eob(clamp(tl/0.4,0,1))});mv('bg-tribute');
+  sprite('baosi',1340,620,420,{alpha:0.95,scale:eob(clamp((tl-0.2)/0.4,0,1))});mv('bs-tribute');
+  chip(960,180,'打输了 献个女儿',COL.red,0.3,t,58);
+  if(tl>0.6)bigText('求你别再打我',960,860,64,COL.cream,COL.ink,0,eob(clamp((tl-0.6)/0.3,0,1)));mv('beg');
+}
+// S14 战利品
+function scTrophy(sc,t,tl){
+  glowRim(960,560,420,t,'rgba(232,184,75,');
+  sprite('baosi',960,580,560,{alpha:0.95,scale:eob(clamp(tl/0.4,0,1)),breathe:1});mv('bs-trophy');
+  chip(960,180,'到周幽王身边',COL.gold,0.2,t,64);
+  if(tl>0.5)chip(960,900,'史书没写 那年她多大',COL.cream,0.5,t,52);
+}
+// S15 不爱笑
+function scNoSmile(sc,t,tl){
+  glow(960,560,380,'rgba(192,57,43,A)',0.2);
+  sprite('baosi',960,600,520,{alpha:0.95,scale:eob(clamp(tl/0.4,0,1))});mv('bs-nosmile');
+  chip(960,180,'长得特别漂亮',COL.cream,0.1,t,60);
+  if(tl>0.4)bigText('但不爱笑',960,880,90,COL.red,COL.ink,0,eob(clamp((tl-0.4)/0.3,0,1)));mv('nosmile');
+}
+// S16 想尽办法逗她
+function scTryHard(sc,t,tl){
+  sprite('king',1300,600,480,{alpha:0.95,rot:Math.sin(t*3)*0.08});mv('king-try');
+  sprite('crown',1300,330,180,{alpha:0.95});mv('crown-try');
+  sprite('baosi',560,640,380,{alpha:0.9});mv('bs-try');
+  chip(960,180,'讲笑话 演节目 换着花样',COL.gold,0.2,t,56);
+  if(tl>0.5)bigText('他越使劲 她越不笑',960,900,60,COL.cream,COL.ink,0,eob(clamp((tl-0.5)/0.3,0,1)));mv('tryhard');
+}
+// S17 凭什么笑
+function scWhySmile(sc,t,tl){
+  glow(960,480,340,'rgba(232,184,75,A)',0.22);
+  sprite('baosi',960,620,480,{alpha:0.9});mv('bs-why');
+  if(tl>0.2)bigText('凭什么笑',960,280,120,COL.cream,COL.redD,Math.sin(t*3)*0.03,eob(clamp((tl-0.2)/0.3,0,1)));mv('why');
+}
+// S18 豪门比喻
+function scHaimen(sc,t,tl){
+  bigText('被强行带进豪门',960,300,84,COL.cream,COL.ink,0,eob(clamp(tl/0.35,0,1)));mv('haimen');
+  sprite('baosi',960,680,460,{alpha:0.9});mv('bs-haimen');
+  if(tl>0.5)chip(960,920,'不哭就不错了',COL.gold,0.5,t,54);
+}
+// S19 真宠她/江山搭进去
+function scSpoil(sc,t,tl){
+  glowRim(960,560,460,t,'rgba(232,184,75,');
+  sprite('throne',960,680,640,{alpha:0.95,scale:eob(clamp(tl/0.4,0,1))});mv('throne');
+  sprite('king',960,500,420,{alpha:0.98,scale:eob(clamp((tl-0.2)/0.4,0,1))});mv('king-spoil');
+  chip(960,160,'周幽王是真宠她',COL.gold,0.1,t,64);
+  if(tl>0.5)bigText('把江山都搭进去了',960,940,64,COL.red,COL.ink,0,eob(clamp((tl-0.5)/0.3,0,1)));mv('spoil-word');
+}
+// S20 废立诏书
+function scDepose(sc,t,tl){
+  sprite('edict',960,560,720,{alpha:0.96,scale:eob(clamp(tl/0.4,0,1)),rot:Math.sin(t*1.5)*0.03});mv('edict');
+  chip(520,200,'废申后',COL.red,0.3,t,64);
+  chip(1400,200,'废宜臼',COL.red,0.5,t,64);
+  if(tl>0.6)chip(960,900,'立褒姒为后 立伯服为太子',COL.gold,0.6,t,52);
+}
+// S21 申侯权势
+function scShenhouClan(sc,t,tl){
+  sprite('shenhou',960,600,460,{alpha:0.95,scale:eob(clamp(tl/0.4,0,1))});mv('shenhou');
+  chip(960,180,'申侯 最有权势的诸侯',COL.gold,0.2,t,58);
+  if(tl>0.5)chip(960,900,'申后是他的女儿',COL.cream,0.5,t,52);
+}
+// S22 宜臼连夜逃
+function scFlee(sc,t,tl){
+  sprite('yijiu',600,660,380,{alpha:0.9,rot:-0.1,scale:eob(clamp(tl/0.4,0,1))});mv('yijiu');
+  chip(960,200,'连夜逃去申国',COL.cream,0.2,t,60);
+  if(tl>0.5)bigText('找外公去了',960,880,70,COL.gold,COL.ink,0,eob(clamp((tl-0.5)/0.3,0,1)));mv('flee');
+}
+// S23 申侯能忍
+function scAngry(sc,t,tl){
+  glowRim(960,560,400,t,'rgba(192,57,43,');
+  sprite('shenhou',960,600,480,{alpha:0.96,rot:Math.sin(t*4)*0.06});mv('angry');
+  bigText('申侯能忍？',960,260,110,COL.red,COL.ink,Math.sin(t*3)*0.03,eob(clamp(tl/0.4,0,1)));mv('angry-q');
+}
+// S24 联军
+function scAlliance(sc,t,tl){
+  sprite('shenhou',480,640,340,{alpha:0.9,scale:eob(clamp(tl/0.3,0,1))});mv('all-shen');
+  sprite('rong',1440,640,360,{alpha:0.9,scale:eob(clamp((tl-0.2)/0.3,0,1))});mv('all-rong');
+  chip(960,200,'申侯 + 缯国 + 犬戎',COL.red,0.3,t,58);
+  if(tl>0.6)bigText('一起打周幽王',960,880,70,COL.cream,COL.ink,0,eob(clamp((tl-0.6)/0.3,0,1)));mv('alliance');
+}
+// S25 兵败骊山
+function scDefeat(sc,t,tl){
+  theme.r=160;theme.g=30;theme.b=30;theme.a=0.22;
+  glow(960,500,400,'rgba(192,57,43,A)',0.3);
+  sprite('warflag',960,680,500,{alpha:0.85,rot:Math.sin(t*6)*0.2});mv('defeat-flag');
+  chip(960,180,'公元前771年',COL.cream,0.2,t,64);
+  if(tl>0.4)bigText('兵败 死在骊山下',960,420,80,COL.red,COL.ink,0,eob(clamp((tl-0.4)/0.3,0,1)));mv('defeat');
+}
+// S26 褒姒被掳
+function scTaken(sc,t,tl){
+  sprite('rong',600,640,380,{alpha:0.9});mv('taken-rong');
+  sprite('baosi',1300,640,380,{alpha:0.8,scale:eob(clamp(tl/0.4,0,1))});mv('taken-bs');
+  chip(960,200,'西周亡了',COL.red,0.2,t,70);
+  if(tl>0.5)chip(960,900,'褒姒被犬戎掳走 没了下落',COL.cream,0.5,t,52);
+}
+// S27 谁背锅
+function scWhoBlame(sc,t,tl){
+  bigText('从头到尾是周幽王作的',960,300,64,COL.cream,COL.ink,0,eob(clamp(tl/0.3,0,1)));mv('who1');
+  sprite('king',960,660,440,{alpha:0.9});mv('who-king');
+  if(tl>0.5)bigText('但最后谁背锅？',960,880,64,COL.gold,COL.redD,0,eob(clamp((tl-0.5)/0.3,0,1)));mv('who-q');
+}
+// S28 后人编故事
+function scStoryBook(sc,t,tl){
+  bigText('后人编了个故事',960,300,80,COL.cream,COL.ink,0,eob(clamp(tl/0.3,0,1)));mv('story');
+  sprite('edict',960,680,500,{alpha:0.9,rot:-0.05});mv('book');
+  if(tl>0.5)chip(960,900,'叫 烽火戏诸侯',COL.gold,0.5,t,60);
+}
+// S29 烽火戏诸侯故事重演
+function scBeaconFake(sc,t,tl){
+  sprite('beacon',700,640,380,{alpha:0.95});mv('fake-beacon');
+  sprite('fire',700,340,340,{alpha:0.9,scale:eob(clamp(tl/0.3,0,1)),flicker:t});mv('fake-fire');
+  sprite('zhuhou',1300,660,360,{alpha:0.85,rot:Math.sin(t*2)*0.05});mv('fake-zhuhou');
+  chip(960,180,'骗诸侯白跑一趟',COL.cream,0.2,t,56);
+  if(tl>0.6)chip(960,900,'再点烽火 没人信了',COL.red,0.6,t,54);
+}
+// S30 是编的/汉朝才有
+function scIsFake(sc,t,tl){
+  glow(960,480,340,'rgba(192,57,43,A)',0.25);
+  bigText('这故事是编的',960,300,110,COL.red,COL.ink,Math.sin(t*2.5)*0.03,eob(clamp(tl/0.35,0,1)));mv('isfake');
+  chip(960,600,'烽火台 汉朝才有',COL.cream,0.3,t,64);
+  if(tl>0.6)chip(960,760,'西周根本没有',COL.gold,0.6,t,56);
+}
+// S31 吕氏春秋
+function scLvshiBook(sc,t,tl){
+  sprite('edict',960,660,560,{alpha:0.9,rot:0.05});mv('lvshi');
+  chip(960,180,'最早见于 战国《吕氏春秋》',COL.gold,0.2,t,56);
+  if(tl>0.4)bigText('几百年后的人 编的爱情故事',960,900,56,COL.cream,COL.ink,0,eob(clamp((tl-0.4)/0.3,0,1)));mv('lvshi-word');
+}
+// S32 真实原因
+function scRealReason(sc,t,tl){
+  bigText('真实原因',960,220,80,COL.gold,COL.ink,0,eob(clamp(tl/0.25,0,1)));mv('real-t');
+  chip(600,460,'废长立幼',COL.red,0.3,t,60);
+  chip(1320,460,'破坏宗法制度',COL.red,0.5,t,60);
+  sprite('king',960,740,380,{alpha:0.9});mv('real-king');
+  if(tl>0.6)chip(960,940,'是政治斗争 是他自己作的',COL.cream,0.6,t,50);
+}
+// S33 国王没错错的是女人
+function scBlameWoman(sc,t,tl){
+  bigText('国王没错',960,280,90,COL.cream,COL.ink,0,eob(clamp(tl/0.3,0,1)));mv('king-right');
+  if(tl>0.4)bigText('错的是女人',960,560,110,COL.red,COL.ink,Math.sin(t*3)*0.03,eob(clamp((tl-0.4)/0.3,0,1)));mv('woman-wrong');
+  sprite('baosi',960,820,320,{alpha:0.8});mv('bw-bs');
+}
+// S34 三女对比（妺喜/妲己/褒姒）
+function scThreeWomen(sc,t,tl){
+  chip(480,180,'夏 妺喜',COL.cream,0.2,t,54);
+  chip(960,180,'商 妲己',COL.cream,0.4,t,54);
+  chip(1440,180,'西周 褒姒',COL.gold,0.6,t,54);
+  sprite('moxi',480,640,340,{alpha:0.9,scale:eob(clamp(tl/0.3,0,1))});mv('moxi');
+  sprite('daji',960,640,340,{alpha:0.9,scale:eob(clamp((tl-0.2)/0.3,0,1))});mv('daji');
+  sprite('baosi',1440,640,340,{alpha:0.9,scale:eob(clamp((tl-0.4)/0.3,0,1))});mv('3w-bs');
+  if(tl>0.7)bigText('用了几千年 锅一点没换',960,940,56,COL.red,COL.ink,0,eob(clamp((tl-0.7)/0.25,0,1)));mv('3w-word');
+}
+// S35 现代故事
+function scModernStory(sc,t,tl){
+  bigText('一个姑娘被抢进豪门',960,280,72,COL.cream,COL.ink,0,eob(clamp(tl/0.3,0,1)));mv('modern');
+  sprite('baosi',960,660,420,{alpha:0.9});mv('modern-bs');
+  if(tl>0.5)bigText('全家垮了 都怪她',960,920,64,COL.red,COL.ink,0,eob(clamp((tl-0.5)/0.3,0,1)));mv('modern-blame');
+}
+// S36-S39 四个观点（卡片式）
+function scPointOne(sc,t,tl){
+  bigText('第一',960,220,80,COL.gold,COL.ink,0,eob(clamp(tl/0.2,0,1)));mv('p1-n');
+  sprite('baosi',960,640,400,{alpha:0.9});mv('p1-bs');
+  chip(960,880,'她不是不会笑 是不想笑给你看',COL.cream,0.3,t,52);
+}
+function scPointTwo(sc,t,tl){
+  bigText('第二',960,220,80,COL.gold,COL.ink,0,eob(clamp(tl/0.2,0,1)));mv('p2-n');
+  bigText('出事就怪女人',960,480,72,COL.cream,COL.ink,0,eob(clamp((tl-0.2)/0.3,0,1)));mv('p2-t');
+  chip(960,760,'公司倒怪老板娘 国家亡怪妃子',COL.cream,0.4,t,50);
+  if(tl>0.6)chip(960,900,'锅甩来甩去 就是不怪自己',COL.red,0.6,t,52);
+}
+function scPointThree(sc,t,tl){
+  bigText('第三',960,220,80,COL.gold,COL.ink,0,eob(clamp(tl/0.2,0,1)));mv('p3-n');
+  bigText('你听到的历史',960,460,76,COL.cream,COL.ink,0,eob(clamp((tl-0.2)/0.3,0,1)));mv('p3-t');
+  chip(960,720,'只是写历史的人想让你听到的',COL.cream,0.4,t,52);
+  if(tl>0.6)chip(960,880,'编得再精彩 也改变不了事实',COL.gold,0.6,t,50);
+}
+function scPointFour(sc,t,tl){
+  bigText('第四',960,220,80,COL.gold,COL.ink,0,eob(clamp(tl/0.2,0,1)));mv('p4-n');
+  bigText('一个人的价值',960,460,72,COL.cream,COL.ink,0,eob(clamp((tl-0.2)/0.3,0,1)));mv('p4-t');
+  chip(960,680,'不该由别人写的故事决定',COL.gold,0.4,t,54);
+  sprite('baosi',960,880,280,{alpha:0.8});mv('p4-bs');
+}
+// S40 结尾
+function scEnding(sc,t,tl){
+  theme.r=232;theme.g=184;theme.b=75;theme.a=0.12;
+  glow(960,500,420,'rgba(232,184,75,A)',0.3);
+  sprite('baosi',960,620,480,{alpha:0.9,scale:eob(clamp(tl/0.4,0,1))});mv('end-bs');
+  if(tl>0.4)bigText('行 不扯远了',960,280,80,COL.cream,COL.ink,0,eob(clamp((tl-0.4)/0.3,0,1)));mv('end-line');
+  if(tl>1.0)bigText('我是艾伦 遛狗去了',960,900,64,COL.gold,COL.ink,0,eob(clamp((tl-1.0)/0.4,0,1)));mv('end-sig');
+}
+
+// ---------- 主渲染 ----------
+function render(t){
+  QC.moving.clear();QC.acts=[];QC.textRects=[];QC.subRect=null;QC.fgRects=[];
+  ctx.setTransform(1,0,0,1,0,0);
+  const sc=sceneByT(t);
+  const tl=t-sc.s;
+  // 主题色：烽火红（钩子/战争）↔ 金（褒姒）
+  let tr=192,tg=57,tb=43,ta=0.10;
+  if(t>=1.440&&t<3.880){tr=232;tg=184;tb=75;ta=0.12;}
+  else if(t>=15.100&&t<17.180){tr=232;tg=184;tb=75;ta=0.12;}
+  theme.r=tr;theme.g=tg;theme.b=tb;theme.a=ta;
+  bgBase(t);bgDust(t);bgTheme(t);bgStage(t);
+  try{
+    ctx.save();
+    const name=sc.type;
+    if(name==='hook-smile')scHookSmile(sc,t,tl);
+    else if(name==='baosi-intro')scBaosiIntro(sc,t,tl);
+    else if(name==='king-history')scKingHistory(sc,t,tl);
+    else if(name==='beacon-lit')scBeaconLit(sc,t,tl);
+    else if(name==='rong-comes')scRongComes(sc,t,tl);
+    else if(name==='west-dead')scWestDead(sc,t,tl);
+    else if(name==='familiar-tale')scFamiliarTale(sc,t,tl);
+    else if(name==='not-joke')scNotJoke(sc,t,tl);
+    else if(name==='her-face')scHerFace(sc,t,tl);
+    else if(name==='who-is-she')scWhoIsShe(sc,t,tl);
+    else if(name==='baoguo-girl')scBaoguoGirl(sc,t,tl);
+    else if(name==='war-baoguo')scWarBaoguo(sc,t,tl);
+    else if(name==='baoguo-name')scBaoguoName(sc,t,tl);
+    else if(name==='tribute')scTribute(sc,t,tl);
+    else if(name==='trophy')scTrophy(sc,t,tl);
+    else if(name==='no-smile')scNoSmile(sc,t,tl);
+    else if(name==='try-hard')scTryHard(sc,t,tl);
+    else if(name==='why-smile')scWhySmile(sc,t,tl);
+    else if(name==='haimen')scHaimen(sc,t,tl);
+    else if(name==='spoil')scSpoil(sc,t,tl);
+    else if(name==='depose')scDepose(sc,t,tl);
+    else if(name==='shenhou-clan')scShenhouClan(sc,t,tl);
+    else if(name==='flee')scFlee(sc,t,tl);
+    else if(name==='angry')scAngry(sc,t,tl);
+    else if(name==='alliance')scAlliance(sc,t,tl);
+    else if(name==='defeat')scDefeat(sc,t,tl);
+    else if(name==='taken')scTaken(sc,t,tl);
+    else if(name==='who-blame')scWhoBlame(sc,t,tl);
+    else if(name==='story-book')scStoryBook(sc,t,tl);
+    else if(name==='beacon-fake')scBeaconFake(sc,t,tl);
+    else if(name==='is-fake')scIsFake(sc,t,tl);
+    else if(name==='lvshi-book')scLvshiBook(sc,t,tl);
+    else if(name==='real-reason')scRealReason(sc,t,tl);
+    else if(name==='blame-woman')scBlameWoman(sc,t,tl);
+    else if(name==='three-women')scThreeWomen(sc,t,tl);
+    else if(name==='modern-story')scModernStory(sc,t,tl);
+    else if(name==='point-one')scPointOne(sc,t,tl);
+    else if(name==='point-two')scPointTwo(sc,t,tl);
+    else if(name==='point-three')scPointThree(sc,t,tl);
+    else if(name==='point-four')scPointFour(sc,t,tl);
+    else if(name==='ending')scEnding(sc,t,tl);
+    ctx.restore();
+  }catch(e){window.__err=(window.__err||[]);if(window.__err.length<20)window.__err.push(t.toFixed(2)+': '+String(e));ctx.restore();}
+  // 转场
+  for(const kk in TRANS){const c=+kk;const dt=t-c;if(dt<0||dt>0.4)continue;
+    const ty=TRANS[kk][0],col=TRANS[kk][1];
+    if(ty==='dip')dip(t,c);else if(ty==='veil')veil(t,c,col);else if(ty==='softWipe')softWipe(t,c,col);}
+  // 字幕
+  const sub=subAt(t);
+  if(sub)subBar(sub);
+  // 水印+进度
+  ctx.save();ctx.font='500 32px "Microsoft YaHei"';ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('@徐艾伦',W-44,34);ctx.restore();
+  const pr=clamp(t/SB.total,0,1);
+  ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(0,H-6,W,6);
+  ctx.fillStyle=COL.gold;ctx.fillRect(0,H-6,W*pr,6);mv('progress');
+  // 淡出
+  if(t>SB.total-0.4){ctx.fillStyle='#000';ctx.globalAlpha=(t-(SB.total-0.4))/0.4;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+  QC.moving.add('watermark');QC.acts.push('scene:'+sc.type);
+  if(sc.s>0)QC.acts.push('cut:'+sc.type);
+}
+window.__ready=function(){return loaded>=need;};
+window.renderFrame=function(i){render(i/30);return {t:i/30,moving:[...QC.moving],acts:QC.acts,textRects:QC.textRects,subRect:QC.subRect,fgRects:QC.fgRects};};
+render(0);
+</script></body></html>

@@ -1,0 +1,5 @@
+cap 0 / 600
+cap 150 / 600
+cap 300 / 600
+cap 450 / 600
+sample frames done: 600

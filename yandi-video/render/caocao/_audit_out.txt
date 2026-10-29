@@ -1,0 +1,41 @@
+=== 查一：场景类型覆盖 ===
+分发分支 46 ；sb 类型 43
+PASS 全部场景类型已注册
+scan 0 / 5610
+scan 1500 / 5610
+scan 3000 / 5610
+scan 4500 / 5610
+=== 查二：字幕区越界（持续越界>50%帧才 FAIL）===
+FAIL hook-marry 越界率 100% 首现@4.2s
+FAIL ad197 越界率 69% 首现@14.1s
+FAIL zhangji-dead 越界率 56% 首现@19.43s
+WARN bloodless 瞬时穿越（入场动效） 4%，不拦截
+WARN take-zou 瞬时穿越（入场动效） 7%，不拦截
+WARN revolt 瞬时穿越（入场动效） 4%，不拦截
+FAIL lose-bad 越界率 100% 首现@37s
+FAIL dianwei-hold 越界率 98% 首现@39.9s
+FAIL dianwei-fall 越界率 100% 首现@43.9s
+FAIL escape 越界率 96% 首现@55.1s
+FAIL ding-raises 越界率 76% 首现@61.93s
+FAIL caocao-trains 越界率 98% 首现@66.6s
+FAIL ages 越界率 76% 首现@71.5s
+FAIL beg 越界率 98% 首现@84.9s
+FAIL beg-final 越界率 83% 首现@89.97s
+WARN regret 瞬时穿越（入场动效） 2%，不拦截
+FAIL price 越界率 100% 首现@102.6s
+FAIL choose-heir 越界率 100% 首现@112.1s
+FAIL tuogu 越界率 90% 首现@118.63s
+FAIL gaopingling 越界率 100% 首现@127.6s
+FAIL coup 越界率 99% 首现@134.7s
+FAIL chain-point 越界率 98% 首现@140.4s
+FAIL what-if 越界率 73% 首现@146.23s
+WARN relate-q 瞬时穿越（入场动效） 4%，不拦截
+FAIL p1 越界率 100% 首现@160.6s
+FAIL p2 越界率 78% 首现@172.53s
+FAIL p3 越界率 81% 首现@178.63s
+FAIL ending 越界率 68% 首现@184.83s
+=== 查三：空渲染疑似（非豁免 moving<=6）===
+PASS 无空渲染
+=== 查四：坏文本 ===
+PASS 无坏文本
+===== 审查未通过：23 项 =====
