@@ -51,6 +51,20 @@ function shot08(t, f) {
     const yy = wl + Math.round(Math.sin(xx * 0.06 + t * 2.4) * 1.6);
     px(Math.round(xx), yy, (i & 1) ? M(23) : M(22));
   }
+  // 人鱼潜回水下后，水线上一圈圈散开的涟漪（压扁的椭圆）
+  if (u > 4.95) {
+    const r0 = u - 4.95;
+    for (let k = 0; k < 3; k++) {
+      const rr = (r0 * 34 + k * 26) % 78;
+      if (rr < 4) continue;
+      ellipse(196, wl + 1, Math.round(rr * 1.9), Math.round(rr * 0.42), k === 0 ? M(23) : M(22));
+    }
+    for (let k = 0; k < 5; k++) {
+      const bx2 = 196 + Math.round(Math.sin(t * 2 + k * 1.3) * (6 + k * 5));
+      const by2 = wl - 4 - ((t * 12 + k * 17) % 42);
+      if (by2 > 214) px(bx2, Math.round(by2), M(23));
+    }
+  }
   // 水花
   const splash = (u < 0.95 ? 1 - u / 0.95 : u > 4.55 ? clamp((u - 4.55) / 0.5, 0, 1) : 0);
   if (splash > 0) {
@@ -109,34 +123,20 @@ function shot09(t, f) {
   for (let x = 60; x <= 576; x += 44) { vline(x, 276, 5, M(26)); }
   text('时间', 586, 272, M(7), 1);
   text('知识', 62, 26, M(7), 1);
-  // 天花板：鱼的传授
-  const CEIL = [[88, 168], [150, 140], [220, 122], [300, 108], [390, 100], [480, 96], [576, 96]];
+  // 天花板：鱼的传授（预烘焙 12 帧生长曲线）
   const kc = clamp(u / 1.15, 0, 1);
-  polyPath(CEIL, M(15), false, 0, kc);
-  polyPath(CEIL.map(([x, y]) => [x, y + 3]), M(29), false, 0, kc);
+  blit(CEIL_FRAMES[Math.min(11, Math.floor(kc * 12))], 60, 84);
   if (kc > 0.98) {
-    for (let x = 90; x < 576; x += 10) px(x, 99 + Math.round((x - 90) * -0.0), M(15));
+    for (let x = 90; x < 576; x += 10) px(x, 99, M(15));
     const fx = 100 + ((t * 46) % 470);
-    icon('fish', Math.round(fx), 88, 1, M(15), M(8));
+    fishIcon(fx, 88, t);
     text('鱼的传授', 452, 76, M(15), 1);
     text('THE APKALLU LINE', 452, 86, M(26), 1);
   }
-  // 人类知识柱
-  const vals = [8, 12, 16, 21, 27, 33, 37, 44, 49, 54, 57, 61, 60, 64, 67, 70, 68, 72, 74, 69, 73, 76, 75, 79, 80, 82];
+  // 人类知识柱（预烘焙 34 帧生长柱状图）
+  const vals = BAR_VALS;
   const n = vals.length;
-  for (let i = 0; i < n; i++) {
-    const grow = clamp((u * 1.35 - i * 0.028), 0, 1);
-    const h = Math.round(vals[i] * 1.75 * grow);
-    const x = 92 + i * 18, w = 12;
-    const top = 278 - h;
-    if (h > 0) {
-      const near = h > 132;
-      rect(x, top, w, h, near ? M(29) : M(22));
-      rect(x + 1, top, w - 2, Math.max(1, Math.round(h * 0.55)), near ? M(15) : M(23));
-      hline(x, top, w, near ? M(16) : M(8));
-      px(x + 2, top + 2, M(0)); px(x + w - 3, top + 2, M(0));
-    }
-  }
+  blit(BAR_FRAMES[Math.min(33, Math.floor(u / 0.04))], 84, 128);
   // 封顶线：最后一根顶到天花板就回弹
   const last = 278 - Math.round(vals[n - 1] * 1.75);
   text('封顶', 480, 284, M(19), 1);
@@ -214,7 +214,13 @@ function shot10(t, f) {
     textC('A NAME FOR THE UNSOLVED CASE', 320, 236, M(27), 1);
     if (u > 3.6) {
       const pulse = 0.5 + 0.5 * Math.sin(t * 4);
-      icon('fish', 320, 274, 1, pulse > 0.5 ? M(15) : M(29), M(22));
+      // 鱼群：三条都复用 FISHICON 帧表，主鱼居中缓慢巡游，两条伴鱼跟游
+      const fx2 = 320 + Math.round(Math.sin(t * 0.55) * 34);
+      const fy2 = 272 + Math.round(Math.sin(t * 0.9 + 0.6) * 3);
+      fishIcon(fx2 - 66, fy2 + 8 + Math.round(Math.sin(t * 0.9 + 2.1) * 2), t, 0.35);
+      fishIcon(fx2 + 62, fy2 - 6 + Math.round(Math.sin(t * 0.9 + 3.4) * 2), t, 0.7);
+      fishIcon(fx2, fy2, t);
+      glowSpot(fx2, fy2, 14, 1, 0.10 + 0.12 * pulse);
     }
   });
   hud('假说', 'THE HYPOTHESIS');
@@ -225,9 +231,10 @@ function shot11(t, f) {
   const u = t - 26.88;
   skyBand(-10, H, M(10), M(11));
   for (let y = 44; y < 300; y += 22) hline(-10, y, 660, M(12));
-  // 油灯把整面墙照亮
-  halo(520, 150, 190, 150, R_WARM, 0.5, 2.0);
-  halo(519, 176, 108, 92, R_GOLD, 0.42, 2.1);
+  // 油灯把整面墙照亮（灯与光晕一起极缓地摆动）
+  const sway = Math.round(Math.sin(t * 0.8) * 2);
+  halo(520 + sway, 150, 190, 150, R_WARM, 0.5, 2.0);
+  halo(519 + sway, 176, 108, 92, R_GOLD, 0.42, 2.1);
   // 书架
   for (const bx of [16, 96]) {
     rect(bx, 60, 58, 180, M(10));
@@ -236,7 +243,15 @@ function shot11(t, f) {
       hline(bx + 2, yy, 54, M(12));
       for (let i = 0; i < 7; i++) {
         const bh = 16 + Math.floor(hash(i + j, bx) * 14);
-        rect(bx + 4 + i * 7, yy - bh, 5, bh, [M(11), M(13), M(18), M(21)][(i + j) % 4]);
+        const col = [M(11), M(13), M(18), M(21)][(i + j) % 4];
+        const xx = bx + 4 + i * 7;
+        rect(xx, yy - bh, 5, bh, col);
+        // 书脊压条 + 烫金书名条 + 页口
+        vline(xx, yy - bh + 2, bh - 3, col === M(18) ? M(17) : M(12));
+        hline(xx + 1, yy - bh + 3, 3, M(15));
+        if ((i + j) & 1) hline(xx + 4, yy - bh + 3, 1, M(9));
+        if (bh > 22) { hline(xx + 1, yy - 8, 3, M(15)); hline(xx + 1, yy - 6, 2, M(14)); }
+        if ((i + j) % 3 === 1 && bh > 18) px(xx + 2, yy - bh + 6, M(19));
       }
     }
   }
@@ -259,10 +274,11 @@ function shot11(t, f) {
     }
   }
   // 灯 + 书桌 + 学者
-  const lampX = 520, lampY = 150;
+  const lampX = 520 + sway, lampY = 150;
   rect(462, 236, 132, 12, M(11));
   rect(470, 248, 8, 56, M(10)); rect(578, 248, 8, 56, M(10));
-  vline(lampX, lampY - 30, 30, M(10));
+  vline(520, lampY - 30, 30, M(10));
+  line(520, lampY - 30, lampX, lampY - 25, M(10));
   poly([[lampX - 16, lampY - 30], [lampX + 16, lampY - 30], [lampX + 10, lampY - 18], [lampX - 10, lampY - 18]], M(14));
   fire(lampX, lampY - 26, t, 1, 3);
   glowSpot(lampX, lampY + 6, 96, 1, 0.20 + 0.03 * Math.sin(t * 3.4));
@@ -362,51 +378,19 @@ function shot13(t, f) {
   dither(320, 276, 700, 42, M(22), 0.42);
   halo(320, 286, 420, 80, R_TEAL, 0.45, 2.0);
   hline(-10, 244, 660, M(23));
-  // 星座：船形
-  const CON = [[140, 60], [200, 44], [266, 52], [318, 40], [372, 54], [330, 92], [260, 100], [196, 88]];
-  polyPath(CON, M(21), true, 0, clamp((u - 0.2) / 1.1, 0, 1));
+  // 星座：船形（预烘焙 12 帧逐笔连线）
+  const CON = CON_PTS;
+  blit(CON_FRAMES[Math.min(11, Math.floor(clamp((u - 0.2) / 1.1, 0, 1) * 12))], 130, 30);
   CON.forEach(([x, y], i) => {
     if (!((Math.floor(f / 5) + i) & 3)) return;
     disc(x, y, 1, M(8)); glowSpot(x, y, 5, 1, 0.18);
   });
-  // 船
+  // 船（预烘焙 4 帧大帆脉冲）
   const bx = Math.round(lerp(590, 178, clamp(u / 3.4, 0, 1)));
   const by = 256 + Math.round(Math.sin(t * 1.3) * 2);
-  const s = 2.2;
-  // 船体
-  poly([[bx - 60, by - 12], [bx + 60, by - 12], [bx + 46, by + 12], [bx - 46, by + 12]], M(9));
-  poly([[bx - 60, by - 12], [bx + 60, by - 12], [bx + 52, by - 4], [bx - 52, by - 4]], M(11));
-  polyLine([[bx - 60, by - 12], [bx + 60, by - 12], [bx + 46, by + 12], [bx - 46, by + 12]], M(23), true);
-  // 船首船尾上翘
-  line(bx - 60, by - 12, bx - 70, by - 22, M(9));
-  line(bx + 60, by - 12, bx + 70, by - 20, M(9));
-  // 桅杆
-  vline(bx, by - 78, 66, M(10));
-  vline(bx + 1, by - 78, 66, M(12));
-  // 大帆：网格=技术感
-  const SAIL = [[bx - 46, by - 70], [bx + 44, by - 70], [bx + 38, by - 22], [bx - 40, by - 22]];
-  poly(SAIL, M(12));
-  poly([[bx - 46, by - 70], [bx - 10, by - 70], [bx - 6, by - 22], [bx - 40, by - 22]], M(13));
-  for (let i = 0; i <= 6; i++) {
-    const xx = Math.round(lerp(bx - 46, bx + 44, i / 6));
-    for (let yy = by - 70; yy < by - 22; yy++) if (inPoly(xx, yy, SAIL)) px(xx, yy, (i + (yy >> 3)) % 3 ? M(21) : M(23));
-  }
-  for (let j = 0; j <= 5; j++) {
-    const yy = Math.round(lerp(by - 70, by - 22, j / 5));
-    for (let xx = bx - 46; xx < bx + 44; xx++) if (inPoly(xx, yy, SAIL) && (xx >> 2) % 3) px(xx, yy, j === 0 ? M(8) : M(22));
-  }
-  polyLine(SAIL, M(23), true);
-  // 帆上的脉冲
-  const pulse = (t * 0.6) % 1;
-  for (let xx = bx - 46; xx < bx + 44; xx++) {
-    if (((xx - (bx - 46)) / 90) < pulse && ((xx - (bx - 46)) / 90) > pulse - 0.08) {
-      for (let yy = by - 70; yy < by - 22; yy++) if (inPoly(xx, yy, SAIL)) px(xx, yy, M(16));
-    }
-  }
-  // 船上的人
-  tinyPerson(bx + 46, by - 12, 1.6, M(1), true);
+  blit(SHIP_FRAMES[Math.floor((t * 0.6 % 1) * 4) % 4], bx - 80, by - 100);
   // 灯火
-  disc(bx + 8, by - 16, 2, M(15)); glowSpot(bx + 8, by - 16, 14, 1, 0.5);
+  glowSpot(bx + 8, by - 16, 14, 1, 0.5);
   // 尾迹
   for (let i = 0; i < 26; i++) {
     const xx = bx + 52 + i * 7;
@@ -548,6 +532,17 @@ function shot16(t, f) {
       const ry = yy + Math.floor(hash(i, li * 7 + 2) * L.h);
       px(X0 + rx, ry, L.c2);
     }
+    // 层内包含物：上面两层是陶片，往下只剩骨屑/炭点
+    for (let i = 0; i < 9; i++) {
+      const sx2 = X0 + 18 + Math.floor(hash(i, li * 11 + 3) * (XW - 36));
+      const sy2 = yy + 7 + Math.floor(hash(i, li * 11 + 4) * (L.h - 12));
+      if (li <= 1) {
+        px(sx2, sy2, M(15)); px(sx2 + 1, sy2, M(15)); px(sx2, sy2 + 1, M(14));
+        if (i % 3 === 0) { px(sx2 + 2, sy2 + 1, M(19)); px(sx2 + 2, sy2, M(13)); }
+      } else if (i % 2 === 0) {
+        px(sx2, sy2, M(26)); px(sx2 + 2, sy2 + 1, M(19));
+      }
+    }
     // 标签
     rect(X0 + 4, yy + 5, textW(L.zh) + 8, 14, M(0));
     text(L.zh, X0 + 8, yy + 7, li === 0 ? M(15) : M(26), 1);
@@ -575,9 +570,7 @@ function shot16(t, f) {
   const mx = X0 + 40 + ((u * 62) % span);
   const my = Y0 + 118 + Math.round(Math.sin(u * 1.6) * 44);
   glowSpot(Math.round(mx), Math.round(my), 34, 1, 0.5);
-  ring(Math.round(mx), Math.round(my), 30, M(8));
-  ring(Math.round(mx), Math.round(my), 31, M(27));
-  line(Math.round(mx) + 21, Math.round(my) + 21, Math.round(mx) + 34, Math.round(my) + 34, M(28));
+  blit(MAG_FRAME, Math.round(mx) - 38, Math.round(my) - 38);
   // 计数
   panelBox(486, 10, 132, 40, null, null, M(15));
   text('发现', 496, 16, M(8), 1);

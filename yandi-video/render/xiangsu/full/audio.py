@@ -14,7 +14,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CUE = json.load(open(os.path.join(HERE, 'cues.json'), encoding='utf-8'))
 DUR = float(CUE['duration'])
 N = int(SR * DUR)
-VOICE = os.environ.get('XIANGSU_VOICE', 'D:/@kaifa/yandi/output/001_波斯湾伊甸园_口播稿+配音/配音.wav')
+VOICE = os.environ.get('XIANGSU_VOICE') or ''
+if not VOICE:
+    raise SystemExit('未设置 XIANGSU_VOICE（旁白 wav 路径）；例 XIANGSU_VOICE=D:/@kaifa/yandi/output/002_xxx/配音.wav')
+if not os.path.exists(VOICE):
+    raise SystemExit('旁白不存在：%s' % VOICE)
 rng = np.random.default_rng(20261029)
 
 BPM = 84.0
@@ -236,6 +240,21 @@ def build_sfx():
             place(S, highpass(noise(n, 300 + ci % 37), 2600) * np.exp(-x * 150), at, 0.022)
     return S
 
+# ------------------------------------------------------------------ real sfx（音效库）
+def build_real_sfx():
+    plan = json.load(open(os.path.join(HERE, 'sfx_cues.json'), encoding='utf-8'))
+    S = np.zeros(N, dtype=np.float32)
+    for i, cue in enumerate(plan['cues']):
+        p = os.path.join(HERE, 'out', 'sfx_prep', f'{i:02d}.wav')
+        if not os.path.isfile(p):
+            raise SystemExit('缺少 %s，先跑 sfx_prep.py' % p)
+        with wave.open(p, 'rb') as w:
+            assert w.getframerate() == SR and w.getnchannels() == 1, p
+            raw = w.readframes(w.getnframes())
+        x = np.frombuffer(raw, dtype='<i2').astype(np.float32) / 32768.0
+        place(S, x, float(cue['t']), 1.0)
+    return S, float(plan.get('mix_gain', 0.55)), len(plan['cues'])
+
 # ------------------------------------------------------------------ voice
 def load_voice():
     with wave.open(VOICE, 'rb') as w:
@@ -265,6 +284,8 @@ if __name__ == '__main__':
     music = build_music() * 0.8
     print('sfx…')
     sfx = build_sfx()
+    print('real sfx…')
+    real, mg, nreal = build_real_sfx()
     bed = music + sfx
     peak = float(np.max(np.abs(bed))) or 1.0
     bed = bed / peak * 0.62
@@ -273,6 +294,11 @@ if __name__ == '__main__':
     voice = load_voice()
     vp = float(np.max(np.abs(voice))) or 1.0
     voice = voice / vp * 0.86
-    mix = voice + bed * 0.16
+    mix = voice + bed * 0.20 + real * mg
+    pk = float(np.max(np.abs(mix))) or 1.0
+    if pk > 0.95:
+        mix *= 0.95 / pk
+        print('mix peak %.3f → scaled to 0.95' % pk)
     write_wav(os.path.join(HERE, 'out', 'mix_raw.wav'), mix)
+    print('real sfx: %d 条, 素材峰值 %.3f, 混入增益 %.2f' % (nreal, float(np.max(np.abs(real))), mg))
     print('done: %.1f s, music.wav + mix_raw.wav' % DUR)

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// xiangsu2 · 全片 cue 表生成（词级强制对齐）
+// xiangsu · 全片 cue 表生成（词级强制对齐）
 //
 //   node build_cues.mjs <口播稿.md> <配音.transcript.json> <out/cues.json> [beats.json]
 //

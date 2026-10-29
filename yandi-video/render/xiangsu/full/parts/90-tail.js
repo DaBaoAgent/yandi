@@ -92,29 +92,21 @@ function fadeEdges(t) {
 }
 
 // ---------------------------------------------------------------- 全片环境动效
-// 一条“信号扫描”光带 + 浮尘微粒，叠在每帧画面上（字幕带除外）。
-// 只沿色板 ramp 提亮 1–3 级（brighten），不盖半透明白色；镜头本身静止时由它保证画面上始终有可测的运动。
-// 关键：光带只在可见区 0..299 内循环，任何时刻都不离屏——带缘每帧扫过 ≥1 个灰阶采样单元。
+// 一层缓慢横向漂移的微尘：亮底描暗、暗底描亮，叠在每帧画面上（字幕带除外）。
+// 只做微尘，不铺任何扫描纹/光带；镜头本身静止时由它保证画面上始终有可测的运动。
+const LUM = new Uint8Array(32);
+for (let i = 0; i < 32; i++) LUM[i] = (0.2126 * MP[i][0] + 0.7152 * MP[i][1] + 0.0722 * MP[i][2]) | 0;
 function ambientAt(t) {
-  // 横向扫描带：全宽实心光带自上而下匀速掠过，中心亮、带缘弱，出头即回到顶部
-  const BH = 24, VSPD = 116, SPAN = 300;
-  const yc = Math.floor((t * VSPD) % SPAN);
-  for (let dy = -BH; dy < BH; dy++) {
-    const k = Math.abs(dy + 0.5) / BH;
-    const lift = k < 0.5 ? 3 : k < 0.85 ? 2 : 1;
-    const y = ((yc + dy) % SPAN + SPAN) % SPAN;
-    for (let x = 0; x < W; x++) brighten(x, y, lift);
-  }
-  // 浮尘：22 颗 4×4 缓移微粒，亮度呼吸
-  for (let i = 0; i < 22; i++) {
-    const spd = 5 + hash(i, 701) * 9;
-    const x = Math.floor(((hash(i, 703) * W + t * spd) % W + W) % W);
-    const y = Math.floor(20 + (hash(i, 705) * 268 + Math.sin(t * (0.4 + hash(i, 707) * 0.6) + i) * 5) % 275);
-    const tw = Math.sin(t * (2.2 + hash(i, 709) * 2.5) + i * 1.7);
-    if (tw > 0.1) {
-      const lift = tw > 0.7 ? 3 : 2;
-      for (let j = 0; j < 4; j++) for (let m = 0; m < 4; m++) brighten(x + m, y + j, lift);
-    }
+  const lut = makeLUT(Math.round(t * FPS));
+  for (let i = 0; i < 40; i++) {
+    const dir = hash(i, 811) < 0.22 ? -1 : 1;
+    const spd = 14 + hash(i, 801) * 15;
+    const x = Math.floor(((hash(i, 803) * W + t * spd * dir) % W + W) % W);
+    const y = Math.floor(14 + (hash(i, 805) * 272 + Math.sin(t * (0.16 + hash(i, 807) * 0.22) + i * 2.1) * 5 + 272) % 272);
+    const sz = 1;
+    const darkHere = LUM[lut[IB[y * W + x]]] >= 128;
+    const c = darkHere ? M(0) : M(8);
+    for (let j = 0; j < sz; j++) for (let k = 0; k < sz; k++) px(x + k, y + j, c);
   }
 }
 
@@ -151,17 +143,32 @@ function composite(f) {
   ctx.fillStyle = 'rgba(120,255,200,0.02)'; ctx.fillRect(0, 0, OUTW, OUTH);
   ctx.globalCompositeOperation = 'source-over';
 }
+// 机位微呼吸：整数像素的三角度慢漂（栅格不变），代替原先靠快尘提供的画面动感。
+// 三角波速度恒定 → 每 0.4 s 必有一像素位移，静置镜头也不会长时间完全定格；
+// 幅度 ±2~3 px、周期 3~4 s，字幕与微尘不参与位移。
+function triWave(t, period) {
+  const p = ((t % period) + period) % period / period;
+  return p < 0.5 ? p * 4 - 1 : 3 - p * 4;
+}
+function driftAt(t) {
+  // 片头七个海湾镜头本来就带手持抖动+推轨，再叠漂移会加重压缩噪点，直接跳过。
+  if (t < CUTS[6]) return [0, 0];
+  const dx = Math.round(2.5 * triWave(t + 0.30, 4.0));
+  const dy = Math.round(2.0 * triWave(t + 1.70, 3.0));
+  return [dx, dy];
+}
 window.renderAt = (t) => {
   const tt = Math.min(cues.duration - 1e-4, Math.max(0, t));
   const f = Math.round(tt * FPS);
+  const [dx, dy] = driftAt(tt);
   const [sx, sy] = shakeXY(tt);
-  GX = sx; GY = sy;
+  GX = dx + sx; GY = dy + sy;
   IB.fill(0);
   SHOTS[shotIndex(tt)](tt, f);
   const tr = transAt(tt);
   if (tr) {
     JB.set(IB);
-    GX = 0; GY = 0;
+    GX = dx; GY = dy;
     SHOTS[tr.prev](Math.max(0, CUTS[tr.prev] - 1 / FPS), f);
     mixCols(IB, JB, tr.p);
   }

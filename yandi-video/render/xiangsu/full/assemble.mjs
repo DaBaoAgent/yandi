@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // 把 demo/film.js 的前半段（色板 / 图元 / sprite / 字体 / 前 7 镜）与 full/parts/*.js 拼成全片 film.js，
-// 连同 cues.json / sprites.js / index.html 一起同步进渲染仓库的 demos/xiangsu2-eden-full/。
+// 连同 cues.json / sprites.js / index.html 一起同步进渲染仓库的 demos/xiangsu-eden-full/。
 //
 //   node assemble.mjs
 //
-// 环境变量 XIANGSU2_REPO 可覆盖渲染仓库路径。
+// 环境变量 XIANGSU_REPO 可覆盖渲染仓库路径（旧名 XIANGSU2_REPO 仍兼容）。
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
-const repo = process.env.XIANGSU2_REPO || 'D:/@kaifa/yandi/output/020_曹操/render/mg-styles-15';
-const outDir = path.join(repo, 'demos', 'xiangsu2-eden-full');
+const repo = process.env.XIANGSU_REPO || process.env.XIANGSU2_REPO || 'D:/@kaifa/yandi/output/020_曹操/render/mg-styles-15';
+const outDir = path.join(repo, 'demos', 'xiangsu-eden-full');
 
 const MARK = '// ---------------------------------------------------------------- transitions / subtitle / CRT';
 const base = fs.readFileSync(path.join(root, 'demo', 'film.js'), 'utf8');

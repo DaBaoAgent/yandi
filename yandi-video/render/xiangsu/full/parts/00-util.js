@@ -152,12 +152,36 @@ function boatReed(x, y, s, t, lit) {
   px(x + q(2 * s), y - q(31 * s), M(15));
 }
 function houseHut(x, gy, w, h, cWall, cRoof) {
+  // 土坯墙：错缝砖层 + 墙角明暗
+  const q = Math.round;
+  const wallHi = cWall === M(12) ? M(13) : M(14);
   rect(x, gy - h, w, h, cWall);
-  for (let j = 3; j < h; j += 5) hline(x + 1, gy - h + j, w - 2, cWall === M(12) ? M(11) : M(13));
-  poly([[x - 4, gy - h], [x + Math.round(w / 2), gy - h - Math.round(w * 0.5)], [x + w + 4, gy - h]], cRoof);
+  for (let j = 3; j < h; j += 5) {
+    hline(x + 1, gy - h + j, w - 2, cWall === M(12) ? M(11) : M(13));
+    for (let i = 3 + (((j / 5) | 0) & 1) * 4; i < w - 3; i += 8) px(x + i, gy - h + j - 2, M(11));
+  }
+  vline(x + 1, gy - h + 1, h - 2, wallHi);
+  vline(x + w - 2, gy - h + 1, h - 2, cWall === M(12) ? M(10) : M(12));
+  // 芦苇顶：放射草纹 + 檐口
+  const peakY = gy - h - q(w * 0.5);
+  const roofLine = cRoof === M(11) ? M(12) : M(10);
+  poly([[x - 4, gy - h], [x + q(w / 2), peakY], [x + w + 4, gy - h]], cRoof);
+  for (let i = 4; i < w + 4; i += 4) line(x + q(w / 2), peakY + 2, x - 4 + i, gy - h, roofLine);
+  line(x - 3, gy - h - 1, x + q(w / 2), peakY, cRoof === M(11) ? M(12) : cRoof);
   hline(x - 4, gy - h, w + 8, cRoof === M(11) ? M(12) : cRoof);
-  rect(x + Math.round(w / 2) - 3, gy - Math.round(h * 0.55), 6, Math.round(h * 0.55), M(0));
-  px(x + 3, gy - h + 5, M(0)); px(x + w - 4, gy - h + 5, M(0));
+  for (let i = 0; i < w + 8; i += 4) px(x - 4 + i, gy - h + 1, M(10));
+  // 门：门框 + 门楣 + 门板缝
+  const dh = q(h * 0.55), dx = x + q(w / 2) - 4;
+  rect(dx - 1, gy - dh - 1, 10, dh + 1, cWall);
+  rect(dx, gy - dh, 8, dh, M(8));
+  rect(dx + 1, gy - dh + 1, 6, dh - 1, M(0));
+  hline(dx - 1, gy - dh - 1, 10, M(11));
+  px(dx + 6, gy - q(dh * 0.5), M(15));
+  // 窗
+  if (w >= 28) {
+    rect(x + 4, gy - h + 7, 4, 4, M(0)); px(x + 5, gy - h + 8, M(15));
+    rect(x + w - 8, gy - h + 7, 4, 4, M(0)); px(x + w - 7, gy - h + 8, M(15));
+  }
 }
 function godHead(x, y, s, c, c2, flip = 1) {
   const q = Math.round, f = flip;
@@ -188,29 +212,56 @@ function icon(kind, cx, cy, s, c, c2) {
   const o = (x, y, rr, cc) => ring(cx + k(x), cy + k(y), Math.max(2, k(rr)), cc);
   switch (kind) {
     case 'temple':
-      r(-13, 6, 26, 6, c); r(-10, 0, 20, 6, c2); r(-7, -6, 14, 6, c); r(-3, -11, 6, 5, c2);
-      r(-2, 8, 4, 4, M(0)); p(0, -13, c2); break;
+      // 三级台基 + 砖缝 + 檐口 + 中央阶梯 + 门与顶饰
+      r(-13, 7, 26, 6, c); r(-10, 1, 20, 6, c2); r(-7, -5, 14, 6, c); r(-3, -11, 6, 6, c2);
+      hline(cx - k(13), cy + k(7), k(26), c2);
+      hline(cx - k(10), cy + k(1), k(20), c);
+      hline(cx - k(7), cy - k(5), k(14), c2);
+      for (let i = -12; i <= 10; i += 4) p(i, 9 + (i & 4 ? 1 : 0), c2);
+      for (let i = -9; i <= 7; i += 4) p(i, 3, c);
+      for (let i = -6; i <= 4; i += 4) p(i, -3, c2);
+      for (let y = 12; y >= -9; y -= 2) { p(-1, y, c2); p(0, y, c2); }
+      r(-2, -8, 4, 3, M(0)); p(0, -10, M(0));
+      p(0, -13, c2); p(0, -12, c); break;
     case 'tablet':
-      r(-8, -11, 16, 22, c); r(-6, -9, 12, 18, c2);
-      for (let j = 0; j < 5; j++) { const yy = -6 + j * 4; for (let i = 0; i < 4; i++) p(-4 + i * 3, yy, c), p(-3 + i * 3, yy + 1, c); }
-      break;
-    case 'wheat':
-      for (let i = -1; i <= 1; i++) {
-        l(i * 5, 12, i * 2, -6, c);
-        for (let j = 0; j < 4; j++) { p(i * 2 - 2, -6 + j * 4, c2); p(i * 2 + 2, -7 + j * 4, c2); }
-        p(i * 2, -10, c2);
+      // 泥板：外框 + 五列楔形刻痕 + 缺口 + 底面阴影
+      r(-9, -12, 18, 24, c); r(-7, -10, 14, 20, c2);
+      hline(cx - k(9), cy - k(12), k(18), c2);
+      for (let j = 0; j < 5; j++) {
+        const yy = -7 + j * 4;
+        for (let i = 0; i < 3; i++) { p(-4 + i * 4, yy, c); p(-3 + i * 4, yy + 1, c); p(-5 + i * 4, yy + 1, c2); }
       }
-      break;
+      p(6, -9, M(0)); p(7, -8, M(0)); p(7, -7, M(0));
+      hline(cx - k(9), cy + k(11), k(18), M(0)); break;
+    case 'wheat':
+      // 三株：茎 + 对生麦粒 + 麦芒 + 束带
+      for (let i = -1; i <= 1; i++) {
+        l(i * 5, 12, i * 2, -4, c);
+        for (let j = 0; j < 4; j++) {
+          p(i * 2 - 2, -4 - j * 3, c2); p(i * 2 + 2, -5 - j * 3, c2);
+          p(i * 2 - 1, -3 - j * 3, c); p(i * 2 + 1, -4 - j * 3, c);
+          l(i * 2 - 2, -4 - j * 3, i * 2 - 4, -7 - j * 3, c2);
+          l(i * 2 + 2, -4 - j * 3, i * 2 + 4, -7 - j * 3, c2);
+        }
+        p(i * 2, -16, c2);
+      }
+      hline(cx - k(7), cy + k(9), k(14), c2); break;
     case 'geo':
       l(-10, 9, 10, 9, c); l(-10, 9, 2, -9, c); l(2, -9, 10, 9, c);
       o(2, -4, 3, c2); p(2, -4, c2); break;
     case 'boat':
-      poly([[cx - k(12), cy + k(4)], [cx + k(12), cy + k(4)], [cx + k(8), cy + k(9)], [cx - k(8), cy + k(9)]], c);
-      l(0, 3, 0, -11, c2); poly([[cx, cy - k(11)], [cx + k(9), cy + k(1)], [cx, cy + k(2)]], c2);
-      break;
+      // 船体 + 舷缘 + 肋骨 + 桅 + 方帆 + 旗
+      poly([[cx - k(13), cy + k(4)], [cx + k(13), cy + k(4)], [cx + k(9), cy + k(9)], [cx - k(9), cy + k(9)]], c);
+      hline(cx - k(11), cy + k(5), k(22), c2);
+      for (let i = -2; i <= 2; i++) l(i * 4, 5, i * 3, 8, c2);
+      l(0, 3, 0, -12, c); l(1, 3, 1, -12, c2);
+      poly([[cx, cy - k(12)], [cx + k(10), cy - k(1)], [cx, cy + k(2)]], c2);
+      l(0, -12, 10, -1, c);
+      p(0, -13, c2); p(1, -13, c2); p(2, -13, c); break;
     case 'gear':
-      o(0, 0, 7, c); d(0, 0, 3, c2);
-      for (let i = 0; i < 8; i++) { const a = i * 0.785; l(Math.cos(a) * 7, Math.sin(a) * 7, Math.cos(a) * 11, Math.sin(a) * 11, c); }
+      o(0, 0, 7, c); o(0, 0, 5, c2); d(0, 0, 2, c); d(0, 0, 1, M(0));
+      for (let i = 0; i < 8; i++) { const a = i * 0.785; l(Math.cos(a) * 7, Math.sin(a) * 7, Math.cos(a) * 11, Math.sin(a) * 11, c); p(Math.cos(a) * 10, Math.sin(a) * 10, c2); }
+      for (let i = 0; i < 4; i++) { const a = i * 1.571 + 0.785; p(Math.cos(a) * 4, Math.sin(a) * 4, c); }
       break;
     case 'wheel':
       o(0, 0, 9, c); d(0, 0, 2, c2);
@@ -250,9 +301,17 @@ function icon(kind, cx, cy, s, c, c2) {
       poly([[cx, cy - k(11)], [cx + k(5), cy - k(2)], [cx + k(4), cy + k(6)], [cx, cy + k(9)], [cx - k(4), cy + k(6)], [cx - k(5), cy - k(2)]], c);
       poly([[cx, cy - k(4)], [cx + k(2), cy + k(2)], [cx - k(2), cy + k(2)]], c2); break;
     case 'jar':
-      poly([[cx - k(4), cy - k(10)], [cx + k(4), cy - k(10)], [cx + k(3), cy - k(6)], [cx + k(7), cy + k(2)],
-        [cx + k(5), cy + k(10)], [cx - k(5), cy + k(10)], [cx - k(7), cy + k(2)], [cx - k(3), cy - k(6)]], c);
-      l(-3, 2, 3, 2, c2); break;
+      // 口沿 / 颈 / 鼓腹 / 双耳 / 弦纹 / 高光
+      hline(cx - k(5), cy - k(11), k(10), c2);
+      r(-4, -10, 8, 2, c); r(-3, -8, 6, 3, c);
+      poly([[cx - k(4), cy - k(5)], [cx + k(4), cy - k(5)], [cx + k(8), cy + k(2)],
+        [cx + k(6), cy + k(9)], [cx - k(6), cy + k(9)], [cx - k(8), cy + k(2)]], c);
+      arc(cx - k(6), cy - k(4), Math.max(2, k(3)), 2.2, 4.6, c2);
+      arc(cx + k(6), cy - k(4), Math.max(2, k(3)), -1.5, 0.9, c2);
+      hline(cx - k(7), cy + k(1), k(14), c2);
+      hline(cx - k(6), cy + k(4), k(12), c2);
+      vline(cx - k(5), cy - k(3), k(9), c2);
+      p(-6, 8, c2); p(6, 8, c2); break;
     case 'scroll':
       r(-9, -7, 18, 14, c); r(-7, -5, 14, 10, c2);
       for (let j = -3; j <= 3; j += 3) hline(cx - 5, cy + k(j), k(10), c);
@@ -264,11 +323,16 @@ function icon(kind, cx, cy, s, c, c2) {
     case 'check':
       l(-9, 0, -2, 8, c); l(-2, 8, 10, -8, c); break;
     case 'flood':
-      for (let j = 0; j < 3; j++) {
-        const yy = 2 + j * 4;
-        for (let i = -10; i <= 10; i += 4) { p(i, yy, c); p(i + 1, yy - 1, c); p(i + 2, yy, c); }
+      // 四层浪 + 半淹的屋 + 雨丝
+      for (let j = 0; j < 4; j++) {
+        const yy = 1 + j * 4;
+        for (let i = -12 + (j & 1) * 2; i <= 10; i += 4) {
+          p(i, yy, c); p(i + 1, yy - 1, c); p(i + 2, yy, c); p(i + 2, yy + 1, c2);
+        }
       }
-      r(-5, -10, 10, 8, c2); poly([[cx - k(8), cy - k(10)], [cx, cy - k(16)], [cx + k(8), cy - k(10)]], c2);
+      r(-5, -8, 10, 7, c2); poly([[cx - k(8), cy - k(8)], [cx, cy - k(15)], [cx + k(8), cy - k(8)]], c2);
+      r(-1, -4, 3, 3, M(0));
+      l(-9, -13, -11, -10, c2); l(3, -14, 1, -11, c2); l(9, -12, 7, -9, c2);
       break;
     case 'hut':
       r(-9, -2, 18, 10, c); poly([[cx - k(12), cy - k(2)], [cx, cy - k(11)], [cx + k(12), cy - k(2)]], c2); break;

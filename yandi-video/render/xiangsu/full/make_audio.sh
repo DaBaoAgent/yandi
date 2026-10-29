@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# xiangsu2 · 全片音轨（272 s chiptune + SFX + 配音 → 两遍 loudnorm）
-# 用法: bash make_audio.sh [工作目录]       默认 = 本目录 full/
+# xiangsu · 全片音轨（chiptune + SFX + 配音 → 两遍 loudnorm）
+# 用法: XIANGSU_VOICE=<旁白.wav> bash make_audio.sh [工作目录]       默认 = 本目录 full/
+# XIANGSU_VOICE 必填；未设置直接报错，避免静默沿用上一部片的旁白。
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WORK="${1:-$HERE}"
-PY="${XIANGSU2_PY:-D:/@kaifa/openviking/.venv/Scripts/python.exe}"
-VOICE="${XIANGSU2_VOICE:-D:/@kaifa/yandi/output/001_波斯湾伊甸园_口播稿+配音/配音.wav}"
+PY="${XIANGSU_PY:-${XIANGSU2_PY:-D:/@kaifa/openviking/.venv/Scripts/python.exe}}"
+VOICE="${XIANGSU_VOICE:-${XIANGSU2_VOICE:-}}"
+: "${VOICE:?未设置 XIANGSU_VOICE（旁白 wav 路径，例 D:/@kaifa/yandi/output/002_xxx/配音.wav）}"
+[ -f "$VOICE" ] || { echo "旁白不存在：$VOICE" >&2; exit 1; }
 
 cd "$WORK"
 mkdir -p out
+"$PY" sfx_prep.py
 XIANGSU_VOICE="$VOICE" "$PY" audio.py
 
 # 两遍 loudnorm：-16 LUFS / TP -1.5（先量，再线性校正）

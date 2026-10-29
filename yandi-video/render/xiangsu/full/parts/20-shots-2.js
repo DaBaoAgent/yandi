@@ -38,8 +38,6 @@ function shot17(t, f) {
   const by = lvl - 8 + Math.round(Math.sin(t * 3.1) * 2);
   halo(bx + 4, by - 10, 54, 36, R_GOLD, 0.78, 2.1);
   boatReed(bx, by, 0.8, t, true);
-  tinyPerson(bx - 8, by - 3, 0.9, M(1));
-  tinyPerson(bx + 10, by - 3, 0.8, M(1), true);
   // 雨
   for (let i = 0; i < 140; i++) {
     const rx = ((hash(i, 331) * 780 + t * 90) % 780) - 70;
@@ -94,13 +92,9 @@ function shot18(t, f) {
       rect(x + 8, y + 26, c.w - 16, c.h - 34, M(20));
       poly([[x + 14, y + 50], [x + 40, y + 40], [x + 70, y + 58], [x + c.w - 20, y + 80], [x + c.w - 20, y + c.h - 12], [x + 14, y + c.h - 12]], M(13));
       for (let k = 0; k < 12; k++) px(x + 12 + Math.floor(hash(k, i + 41) * (c.w - 24)), y + 28 + Math.floor(hash(k, i + 43) * (c.h - 38)), M(22));
-      if (c.en) text(c.en, x + 8, y + c.h - 11, M(8), 1);
+      if (c.en) text(c.en, x + 8, y + c.h - 13, M(8), 1);
     } else if (c.k === 'gene') {
-      for (let k = 0; k < 34; k++) {
-        const a = k * 0.42 + t * 1.6;
-        px(ix + Math.round(Math.sin(a) * 10), y + 30 + k, (k & 4) ? M(22) : M(15));
-        px(ix - Math.round(Math.sin(a) * 10), y + 30 + k, (k & 4) ? M(15) : M(22));
-      }
+      blit(HELIX_FRAMES[Math.floor((t * 1.6 / TWO_PI) * 12) % 12], ix - 22, y + 25);
     } else if (c.k === 'tablet') {
       rect(x + 10, y + 26, c.w - 20, c.h - 34, M(13));
       for (let r = 0; r < 6; r++) for (let k = 0; k < 4; k++) if (hash(r, k + i) < 0.7) px(x + 16 + k * 24, y + 30 + r * 9, M(11));
@@ -197,8 +191,9 @@ function shot19(t, f) {
       const x = 44 + i * 116;
       rect(x, 268, 104, 28, M(0));
       rect(x + 2, 270, 100, 24, M(13));
-      text(zh, x + 6, 272, M(8), 1);
-      text(en, x + 6, 284, M(28), 1);
+      // 中英文并排、不留空格，垂直居中在框内
+      text(zh, x + 6, 277, M(8), 1);
+      text(en, x + 6 + textW(zh) - 2, 277, M(28), 1);
       if (kk < 1) hline(x + 2, 270 + Math.round((1 - kk) * 24), 100, M(8));
     });
     text('地名不是苏美尔语 · 前人留下的定居点', 44, 298 - 4, M(15), 1);
@@ -230,8 +225,9 @@ function shot20(t, f) {
     rect(cx + 3, y + 3, 300, 40, M(0));
     rect(cx, y, 300, 40, M(28));
     cornerFrame(cx, y, 300, 40, M(26), 8);
-    text(wd.zh, cx + 10, y + 6, M(0), 2);
-    text(wd.en, cx + 10, y + 32 - 6, M(27), 1);
+    // 中英文并排、不留空格，两个字面中心都对齐卡片中线
+    text(wd.zh, cx + 10, y + 8, M(0), 2);
+    text(wd.en, cx + 10 + textW(wd.zh) * 2 - 4, y + 14, M(27), 1);
     // 借
     stampBox('借', cx + 240, y + 6, M(19), 1);
     text(wd.src, cx + 296 - textW(wd.src), y + 30, M(26), 1);

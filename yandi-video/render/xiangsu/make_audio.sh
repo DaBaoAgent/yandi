@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# xiangsu2 · 确定性音轨（chiptune + SFX + 配音 → 两遍 loudnorm）
+# xiangsu · 确定性音轨（chiptune + SFX + 配音 → 两遍 loudnorm）
 # 用法: bash make_audio.sh [demo目录]       默认 demo 目录 = 本包 demo/
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DEMO="${1:-$HERE/demo}"
-PY="${XIANGSU2_PY:-D:/@kaifa/openviking/.venv/Scripts/python.exe}"
-VOICE="${XIANGSU2_VOICE:-D:/@kaifa/yandi/output/001_波斯湾伊甸园_口播稿+配音/配音.wav}"
+PY="${XIANGSU_PY:-${XIANGSU2_PY:-D:/@kaifa/openviking/.venv/Scripts/python.exe}}"
+VOICE="${XIANGSU_VOICE:-${XIANGSU2_VOICE:-D:/@kaifa/yandi/output/001_波斯湾伊甸园_口播稿+配音/配音.wav}}"
 
 cd "$DEMO"
 mkdir -p out
