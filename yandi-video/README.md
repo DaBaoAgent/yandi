@@ -153,7 +153,14 @@ out/<序号> <标题>/
 
 ---
 
-## 目录（双管线）
+## 目录（各管线）
+
+### xiangsu · 波斯湾伊甸园线（2026-10-29 命名并固化）
+
+成片 1920×1080、像素密度 640×360（×3 整数最近邻 + CRT 后期）。源码、脚本、cue 表、FREEZE 记录在
+`yandi-video/render/xiangsu/`；拼装/渲染/封面用的代码与生成目录在渲染仓库
+`mg-styles-15/demos/xiangsu-eden/`（10 s 样片）、`demos/xiangsu-eden-full/`（全片）、`demos/xiangsu-cover/`（封面）。
+规范与逐文件 SHA-256 见该目录 `README.md` 与 `FREEZE_PIPELINE.json`。`demos/xiangsu/` 是 workbuddy 旧线，只读。
 
 ```
 yandi-video/render/piying/     炎帝线（后续剧集模板）

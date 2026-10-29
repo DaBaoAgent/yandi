@@ -5,7 +5,7 @@ description: 炎帝/女娲系列历史神话口播视频的成片规格与生产
 
 # 炎帝/女娲系列 · 成片规格与生产流程（两集定版）
 
-两集均已按本规格定稿交付：**女娲 427.2s（nuwa 线）**、**炎帝 385.5s（yandi 线）**。另有像素风线 **xiangsu** 的 10 秒样片（仁德天皇陵，640×360 栅格 + 逐像素 sprite 表）已交付，规格见第十节。本文件是**硬规格**：参数、阈值、路径、口径不得凭经验改；返工先读第九节避坑清单。
+两集均已按本规格定稿交付：**女娲 427.2s（nuwa 线）**、**炎帝 385.5s（yandi 线）**。像素风线 **xiangsu**（640×360 栅格 + 逐像素 sprite 表）已承载第一个全片作品：**波斯湾伊甸园 272.1s（out/3，2026-10-29 定稿，规格见第十节 xiangsu 小节）**；仁德天皇陵 10 秒样片同为该线产物。本文件是**硬规格**：参数、阈值、路径、口径不得凭经验改；返工先读第九节避坑清单。
 
 ---
 
@@ -26,7 +26,7 @@ description: 炎帝/女娲系列历史神话口播视频的成片规格与生产
 |---|---|---|---|---|---|
 | 女娲 | 427.2s | 12816 | 145.9MB | 8 段（S0-S7） | `render/nuwa/` |
 | 炎帝 | 385.5s | 11565 | 164.5MB | 8 段 / 98 镜 / 320 字幕 / 163 事件 | `render/piying/` |
-| 波斯湾伊甸园 | 271.96s | 8154 | 129.9MB | 73 镜 / 198 字幕 / 131 事件 | `render/posiwan/` |
+| 波斯湾伊甸园 | 272.07s | 8162 | 195.8MB | 640×360 栅格 ×3，58 条真实音效 | `out/3`（xiangsu 规格全片，2026-10-29 定稿 rev4） |
 
 ---
 
@@ -39,7 +39,7 @@ description: 炎帝/女娲系列历史神话口播视频的成片规格与生产
 3. **每 2 秒至少 1 个新动效点**（两集均全窗口覆盖）
 4. 纯文字画面（章节标题/片头片尾/金句）豁免，合计 **≤20% 时长**（女娲 11.5%，炎帝 3.3%）
 
-核验脚本：`qc_full.js`（女娲）/ `qc_full_yandi.js`（炎帝）。渲染页内嵌仪表：`QC.moving` / `QC.acts` / `QC.textRects` / `QC.subRect` / `QC.fgRects`。
+核验脚本：`qc_full_yandi.js`（炎帝；女娲的 `qc_full.js` 已随 nuwa 管线删除，历史指标见下表）。渲染页内嵌仪表：`QC.moving` / `QC.acts` / `QC.textRects` / `QC.subRect` / `QC.fgRects`。
 
 - 5% 透明度装饰大字**不得计入 textRects**（否则文字覆盖率虚高）
 - 卡片与精灵已接入 `QC.fgRects`，参与越界审查
@@ -178,7 +178,7 @@ ffmpeg -y -i src_3x4.png -vf "crop=1024:1364:0:0,scale=1080:1440:flags=lanczos" 
 
 ### 4.4 备用方案（代码合成）
 
-`render/nuwa/cover_nuwa_v2.js`：Canvas 合成（bg10 aspect-fill + 主角 + STXingkai 金色渐变标题）。系统书法字体：`STXINGKA`(行楷) / `STXKAITI` / `STXLITI`(隶书) / `STXINWEI`(新魏) / `FZSTK`。
+Canvas 合成法（原 `render/nuwa/cover_nuwa_v2.js`，脚本已删，方法留档）：bg10 aspect-fill + 主角 + STXingkai 金色渐变标题。系统书法字体：`STXINGKA`(行楷) / `STXKAITI` / `STXLITI`(隶书) / `STXINWEI`(新魏) / `FZSTK`。
 
 ---
 
@@ -221,11 +221,7 @@ ffmpeg -y -i src_3x4.png -vf "crop=1024:1364:0:0,scale=1080:1440:flags=lanczos" 
 | 9 | 封装 | `-map 0:v:0 -map 1:a:0 -c:v libx264 -crf 19 ...` | 3 min |
 | 10 | 复核与交付 | ****（四查+qc+响度+目录 一条命令）→ 封面、发布信息、目录整理 | 3 min |
 
-### 6.2 女娲线（`render/nuwa/`，历史定稿）
-
-`gen_full.js` → `page_full_nuwa.html` → `probe_targets.js`（探针）→ `scan_empty.js`（空画面扫描）→ `capture_full_nuwa.js` → `make_sfx_full.js` → BGM → 封装 → `qc_full.js`（8 段汇总）。
-
-### 6.3 样片（30 秒密度验证，两线同法）
+### 6.3 样片（30 秒密度验证，同法）
 
 `gen_sample_yandi.js`（A段 0-32.35 + 0.25s 接点 + B段）→ `page_yandi.html` → `capture_yandi.js` → `audit_yandi.js sample` → 封装进 `源文件/`。
 
@@ -315,15 +311,13 @@ make_sfx_yandi.js / make_sfx_full_yandi.js  音效+配音混音
 chroma2rgba.js / purplish2rgba.js / refine_main.js   ImageGen 素材抠图工具链
 ```
 
-### `render/nuwa/`（女娲线）
-```
-gen_full.js / page_full_nuwa.html / capture_full_nuwa.js / make_sfx_full.js
-qc_full.js / probe_full.js / probe_targets.js / scan_empty.js
-gen_backgrounds.js / render_bgtest.js / cover_nuwa_v2.js / rgb2rgba.js
-gen_sample.js / page_nuwa.html（历史留档）
-```
+### `render/nuwa/`（女娲线 · 2026-10-29 已删除）
 
-### `render/posiwan/`（波斯湾伊甸园线 · 2026-10-27 定稿）
+女娲 427.2s 成片在 `out/@已发/2`。制作脚本（gen_full / capture / make_sfx / qc_full / rgb2rgba 等）已随管线删除；素材包 `output/006_女娲/` 保留（bg10_layeredpeaks 背景两集共用）。若需返工女娲片，从 git 历史或 `.workbuddy/backup/` 找回脚本。
+
+### `render/posiwan/`（⚠️ 已废弃 · 2026-10-29 被 xiangsu 规格全片取代）
+
+> 旧 16:9 版波斯湾线（73 镜/198 字幕/131 事件）。2026-10-29 波斯湾伊甸园以 xiangsu 规格（640×360）重跑并定稿（`out/3`，FREEZE_full_rev4.json 为准），本目录不再使用；脚本留档未删。
 ```
 page_full_posiwan.html / capture_full_posiwan.js / audit_full_posiwan.js
 posiwan_full_sb.json / .js（分镜数据，73 镜/198 字幕/131 事件）
@@ -335,16 +329,23 @@ ffmpeg 全路径：D:/@kaifa/yandi/vendor/gpt-sovits/runtime/ffmpeg.exe（PATH �
 
 ### `render/xiangsu/`（像素风线 · 2026-10-28 用户命名 `xiangsu`）
 
-管线代号固定为 **xiangsu**。代码必须留在克隆的渲染仓库内（harness 自带无头 Chrome + ffmpeg），项目侧 `render/xiangsu/README.md` 只作入口说明。
+**已交付全片：波斯湾伊甸园 272.1s（`out/3`，2026-10-29 定稿 rev4）**。管线源码**已完整保留**在项目侧 `yandi-video/render/xiangsu/`（2026-10-29 由 xiangsu2 改名接管这个名字；现行身份与 41 文件逐 SHA-256 见 `render/xiangsu/FREEZE_PIPELINE.json`）。渲染仓库里的 `demos/xiangsu-eden-full/`、`demos/xiangsu-cover/` 是可再生副本，定稿后删除，`node full/assemble.mjs` 会重建。做下一部 xiangsu 全片时**直接用这条冻结管线**改内容层（`demo/film.js` 头部 + `full/parts/*.js` + `full/cues.json`），不要去 `demos/xiangsu/` 捡旧 workbuddy 像素线骨架。开工与片级必填参数见 `render/xiangsu/README.md`「新片参数（2026-10-30）」；音频与验收仍按 FREEZE 配方，规范如下：
+- 规格：1920×1080（640×360 栅格 ×3 整数最近邻）· 30fps · 8162 帧 · −16.0 LUFS / TP ≤ −1.0 dBTP
+- 混音：voice + bed×0.20 + **sfx×0.55**（58 条真实音效，源 `D:/@kaifa/@/音效`）→ **两遍 loudnorm**；真峰超限时 ffmpeg 退回 dynamic 模式（rev4 实测与线性差中位 0.04 dB）
+- 像素密度验证（FREEZE 口径）：块内列差 <1.4 / 跨块列差 >8 / Y 通道还原差 <0.4 / >12 级异常 0.00% / RGB 还原差（4:2:0 色度抽样）<2 —— 比 PSNR 更能抓"栅格被改"
+- 封面：从成片选最有戏剧张力的镜头（如 t=42.4s 日出逆光半人半鱼），关字幕关 HUD，×4~×5 最近邻取窗放大，顶部深色标题区 + 华文行楷金色标题；无副标题/水印
+
+管线代号固定为 **xiangsu**。源码在项目侧 `yandi-video/render/xiangsu/`，由构建脚本同步进克隆的渲染仓库（harness 自带无头 Chrome + ffmpeg）；渲染仓库里的 `demos/xiangsu-eden*/` 是生成物，不要当源改。
 ```
-vendor/mg-styles-15/demos/xiangsu/
-  index.html      预加载 Fusion Pixel 12 后 import film.js，置 window.__ready
-  film.js         640×360 索引色帧缓冲：色板/LUT、图元、像素字体、六镜头、band wipe、CRT
-  sprites.js      逐像素 sprite 表（ASCII 网格，每字符 = 1 px；空格仅人眼计数，构建时剥离）
-  cues.json       声画共用 cue sheet（cuts / subs / hits）
-  audio.py        chiptune（方波/三角/噪声）+ 配音混音，两遍法 loudnorm
-vendor/mg-styles-15/tools/sheet.mjs   sprite 表放大检查图（行宽/未知字符告警，逐像素自查用）
-vendor/mg-styles-15/tools/density.mjs 动效密度度量（三阈值 + 最长无变化段，口径唯一）
+yandi-video/render/xiangsu/（源）→ <repo>/demos/xiangsu-eden/、xiangsu-eden-full/（生成）
+  demo/index.html 预加载 Fusion Pixel 12 后 import film.js，置 window.__ready
+  demo/film.js    640×360 索引色帧缓冲：色板/LUT、图元、像素字体、六镜头、band wipe、CRT
+                  （全片 film.js = 本文件头部 + full/parts/*.js，由 full/assemble.mjs 拼装）
+  demo/sprites.js 逐像素 sprite 表（ASCII 网格，每字符 = 1 px；空格仅人眼计数，构建时剥离）
+  demo/cues.json  10 s 样片 cue sheet；full/cues.json 是全片 cut/sub/hit
+  demo/audio.py   样片配乐；full/audio.py 是全片配乐 + 音效 + 配音混音，两遍法 loudnorm
+<repo>/tools/sheet.mjs   sprite 表放大检查图（行宽/未知字符告警，逐像素自查用）
+<repo>/tools/density.mjs 动效密度度量（三阈值 + 最长无变化段，口径唯一）
 ```
 关键实现：`CHR` 里 **`'.'→-1 透明，`k`→0 不透明黑**（写成 `'.':0` 会让 `k` 全变透明，整张图只剩描边外的高光点）；
 `buildSpr(name,rows,map,rim)` 构建时做 `rimLight`（右上月光边）；`rotSpr/ blitRot` 提供 5° 档旋转帧缓存；
@@ -376,28 +377,35 @@ CHROME 路径：`C:/Program Files/Google/Chrome/Application/chrome.exe`（`MG_CH
 4. 液压缸/连杆的端点要**吸附到臂的上下缘**（大臂轴线到表缘仅 5–6 px），按轴线 +n*7 算就会悬空成"细铁丝"。
 另：手写表右边缘常漏 1–2 格纯透明列，`sprites.js` 尾部统一补 `.` 到本表最大宽度即可（w 不变、像素零变化，但消掉整屏 `[spr] 行宽不一致` 告警）。
 
-**交付自检（xiangsu 线，五条命令按序跑完才算完）**：
+**交付自检（xiangsu 线）**：
 ```bash
-cd vendor/mg-styles-15
+# 当前全片：一条命令出结论（规格 / 响度 / 动效密度 / 像素密度 / 落盘）
+cd D:/@kaifa/yandi/yandi-video/render/xiangsu/full
+node verify_full.mjs "$XIANGSU_PROJ/全片_${XIANGSU_FILM}_<秒>秒_1920x1080.mp4" --duration "$XIANGSU_DUR"
+
+# 下列为分项口径（路径按当前片替换；<repo> = D:/@kaifa/yandi/output/020_曹操/render/mg-styles-15）
+cd <repo>
 export MG_CHROME="C:/Program Files/Google/Chrome/Application/chrome.exe"
-node tools/sheet.mjs out/sheet.png 6                        # ① 18 张表：必须 0 条行宽/未知字符告警
-node tools/density.mjs demos/xiangsu/out/video640.mp4       # ② 密度：逐窗口 >1% ≥1 帧 + 最长无变化段
-ffmpeg -hide_banner -nostats -i demos/xiangsu/out/video640.mp4 \
+node tools/sheet.mjs out/sheet.png 6                        # ① sprite 表：必须 0 条行宽/未知字符告警
+node tools/density.mjs demos/xiangsu-eden-full/out/video_full.mp4   # ② 密度：逐窗口 >1% ≥1 帧 + 最长无变化段
+ffmpeg -hide_banner -nostats -i demos/xiangsu-eden-full/out/video_full.mp4 \
   -af loudnorm=print_format=summary -f null -               # ③ 响度：−16.0 LUFS / ≤ −1.4 dBTP
-ffmpeg -hide_banner -nostats -i demos/xiangsu/out/video640.mp4 \
+ffmpeg -hide_banner -nostats -i demos/xiangsu-eden-full/out/video_full.mp4 \
   -vf blackdetect=d=0.05:pix_th=0.10 -f null - | grep black_start | wc -l   # ④ 黑帧：应为 0
-node tools/check_sync.mjs --cues demos/xiangsu/cues_full.json \
-  --audio demos/xiangsu/out/full48.mp4 \
-  --asr "D:/@kaifa/yandi/output/002_仁德天皇陵/配音.wav.transcript.simp.json"   # ⑤ 字幕同步：必须带 --asr
+node tools/check_sync.mjs --cues D:/@kaifa/yandi/yandi-video/render/xiangsu/full/cues.json \
+  --audio D:/@kaifa/yandi/yandi-video/render/xiangsu/full/out/audio.wav \
+  --asr "<当前片项目目录>/配音.wav.transcript.simp.json"   # ⑤ 字幕同步：必须带 --asr
 ```
 黑帧那行**不要写 `grep -c`**：计数为 0 时 `grep -c` 返回退出码 1，会被误判成自检失败；用 `grep … | wc -l` 恒返回 0。
 密度脚本的阈值口径固定为「192×108 灰度、帧间差 |Δ|>8、变动像素占比」；换采样尺寸或阈值必须在报告里写明，否则与历史片不可比。
 
 **第 ⑤ 条不能只用 VAD**：本片配音几乎连续（最大停顿 0.11 s），任何 1–2 秒窗口都落在有声段——比例法时间轴实际偏差 p50 13.3 s 时，「窗内有声占比」仍报 **87.9% 通过**。只有 `--asr` 的内容级比对（字幕文字 vs 该时段实际念的字，字符级 LCS）才抓得出来：词级对齐 **90.1%** vs 比例法 **13.9%**。判据：窗内有声均值 ≥80%、字符重合均值 ≥80%、弱条（<50%）≤8%，三项同时满足。中文数字必须先归一化（「二零一八」↔「2018」、「二百八十九」↔「289」），脚本已内置，不归一化会误报 4 条。本线基线（`full48.mp4`，102 条）：窗内 87.1%、间隙 29.5%、起点对准 99/102（平均偏移 109 ms）、字符重合 90.1%、弱条 0。
 
-### `20-pixel` 上游风格复刻（2026-10-28）
+### `youxi` 游戏跑酷管线（2026-10-29 用户命名定稿，原名 rinoku20 / 20-pixel 换皮）
 
-上游标准：`D:/BaiduSyncdisk/MG 动画/videos/20-pixel.md`；实现：`vendor/mg-styles-15/demos/20-pixel/`；换皮版：`demos/rinoku20/`。
+上游标准：`D:/BaiduSyncdisk/MG 动画/videos/20-pixel.md`；实现：`vendor/mg-styles-15/demos/20-pixel/`；**本片管线：`vendor/mg-styles-15/demos/youxi/`**（2026-10-29 由 rinoku20 改名固化）。
+**管线定位**：第四条渲染管线，与 piying（剪影卡片）/ xiangsu（像素风 640×360）并列。形态 = 320×180 点阵 + 7 关跑酷世界 + 检查点事件制，口播驱动分镜。规格 −14 LUFS（注意与系列 −16 区分）。
+**开工次序**：改 `cues_game_full.json`（subs/事件/子场景）→ `patch_events_round2.mjs` → `check_events.mjs --fix-coins` → `build_full.mjs`（一键合并 + splice + 打补丁，产物 `_content_full.js`/`film_full_game.js`）→ `audio_full.py` → `mix_voice.mjs` → harness 渲染 → 四查。样片线（前 10 秒三镜）入口 `index.html`，全片入口 `index_full_game.html`，封面 `cover.html`（`--w/--h` 切 4:3 / 3:4）。
 
 **做法**：整目录复制后只换内容层，不重写。保留 320×180×6、32 色板、day→afternoon→golden→sunset→flash→dusk→night 六段调色、4 层视差（0.125/0.30/0.55/1.0）、24×26 精灵合成器、cue 驱动的推镜与震动、WebGL2 CRT（扫描线+桶形+磷光+暗角）。
 **换皮点**：`LOGO0 = buildLogo5('中文')`（必须在 `C5` 常量之后）、条幅文案、对话框台词与说话人、HUD 标签、主角头美术。
@@ -415,34 +423,74 @@ node tools/check_sync.mjs --cues demos/xiangsu/cues_full.json \
 1. **`renderAt` 对整帧采样，zoom 会把 UI 一起放大**。上游 8–12 倍 punch-in 时画面里没有字幕，本管线字幕条常驻，实测 8 倍时 12 px 字变 96 px 高、字幕条吃掉画面 1/4（最近邻放大不糊，是尺寸失控）。要么把 UI 挪到放大之后画，要么放弃 zoom，用「主体画大 + 现场道具 + 光效」补景别。
 2. **环境槽 `E.*` 随调色阶段变色，剪影/道具必须用固定 `M(i)`**。远景陵墓用 `E.mD` 在 DAY 段是蓝色（SM `[5,5,29,10,9,1]`），会画成蓝蘑菇。
 3. **12 px 点阵的阿拉伯数字 0 与 8 难分**（「2018」读成「2818」）：日期写中文。**印章内塞 12 px 双字必糊**：改单字 + 装饰纹。
+   字幕排版另有一条硬规则：**字宽不能用 `glyph().adv`**。Fusion Pixel 12 对部分汉字（剩 / 雄 / 略…）返回半宽度量 `adv=6`，而字形是满格 12~14 px，按 adv 推进下一个字就压上来（320 栅格里实测「只剩雄略」糊成一团）；`min(adv,12)` 也只是从"压一半"变成"压一点"。正解是**等宽常数**：中文 `12+2`、ASCII `6+2`、词间空格 7，测量（total / 框宽）与绘制（逐字 x 累加）共用同一个 `subCharW()`。整句与金色高亮词**必须在同一个循环里画**——分两次画（先白底整句、再金色覆盖）会因两套定位产生双影。`glyph().w` 是 canvas measureText 原始值，个别字能到数百，任何用到它的地方都要 clamp。
+   另有一条**缺字坑**（2026-10-29 实测）：页面只在 `index.html` 里预热了「样片用到的几十个字」，其余汉字照样渲染，但个别字（本片是「测」）会画成 `.notdef` **实心白方块**——字体文件本身含该字（fontTools 查 cmap 有、轮廓 62 点），是 canvas 字形缓存里拿到的是缺字位图。查法：看到某字变成整齐的白方块，先用 `fontTools` 确认字体有没有这个字，再判断是不是预热不足。**正解是把全片用字一次性预热**（从 cues 里抽 subs/bigs/signs/bubbles/stages/events 的所有字符，本片 459 字），并 `await document.fonts.ready`。救急办法是换字（本片把「测」换成「验」，关名「开棺实测」→「开棺定年」）。
 4. **前景草 `FG` 高度决定角色可见性**：9–13 px 时人物只剩头露出，4–7 px 才看得出跑动姿态。
 
 有旁白时的混音口径（上游是纯 chiptune，不含人声）：旁白裁到片长 → `loudnorm=I=-16` → chiptune `volume=-12dB` → `amix=inputs=2:duration=first:normalize=0` → 两遍法到 −14 LUFS；封装必须显式 `-map 0:v:0 -map 1:a:0`，否则会留下中间文件的旧音轨。
 
-#### 三个固化工具（2026-10-29，这三件事不再手打命令）
+#### 六个固化工具（2026-10-29，这些事不再手打命令）
 
 | 脚本 | 作用 | 判据 |
 |---|---|---|
 | `tools/splice_film.mjs` | 内容段 + 基座 → 渲染器；检查「被删函数仍被 `renderAt` 引用」这类语法查不出的运行期炸点 | 契约无缺口 + 语法通过；往返逐字节一致 |
 | `tools/mix_voice.mjs` | 旁白 + 底乐混音（两遍法 loudnorm） | 响度偏差 ≤0.5 LU、真峰值不超目标 |
 | `tools/check_sync.mjs` | 字幕 / 旁白同步（VAD + ASR 内容级） | 窗内有声均值 ≥80%、字符重合均值 ≥80%、弱条 ≤8% |
+| `tools/check_events.mjs` | 检查点事件校验（2026-10-29 加）：撞踩怪 / 撞金币 / 屏幕重叠 / 事件数量 / 子场景切换点 | 无阻断；`--fix-coins` 可顺手删窗口内金币（先备份 `.bak`） |
+| `demos/youxi/build_full.mjs` | 全片渲染器一键重建：`_content2` + `_full_new` 合并 → splice → 打时长补丁（`duration`、`NFULL-1` 钳制） | splice 契约无缺口 + 语法通过 + 两处补丁都命中 |
+| `demos/youxi/patch_events_round2.mjs` | 全片检查点布点（幂等，可重复执行），含既有 cue 让位（踩怪/路牌/气泡挪时间） | 跑完必须接 `check_events --fix-coins` |
 
 ```bash
 cd vendor/mg-styles-15
+# ⓪ 改完内容段 / cues 之后的标准顺序
+node demos/youxi/patch_events_round2.mjs
+node tools/check_events.mjs demos/youxi/cues_game_full.json --fix-coins   # 清特写窗口内金币
+node demos/youxi/build_full.mjs                                            # 重建 film_full_game.js
+
 # ① 拼渲染器（首次 --base 指基座；之后指产物自身）
-node tools/splice_film.mjs --base demos/rinoku20/film.js --content demos/rinoku20/_content2.js \
-  --out demos/rinoku20/film2.js --cues demos/rinoku20/cues2.json
+node tools/splice_film.mjs --base demos/youxi/film.js --content demos/youxi/_content2.js \
+  --out demos/youxi/film2.js --cues demos/youxi/cues2.json
 # ② 混音
-node tools/mix_voice.mjs --voice "<配音.wav>" --bed demos/rinoku20/out/audio.wav \
-  --out demos/rinoku20/out/mix_final.wav --dur 10
+node tools/mix_voice.mjs --voice "<配音.wav>" --bed demos/youxi/out/audio.wav \
+  --out demos/youxi/out/mix_final.wav --dur 10
 # ③ 字幕同步（必须带 --asr）
-node tools/check_sync.mjs --cues demos/rinoku20/cues2.json --audio "<配音.wav>" \
+node tools/check_sync.mjs --cues demos/youxi/cues2.json --audio "<配音.wav>" \
   --asr "<配音.wav.transcript.simp.json>"
 ```
 
 **VAD 单独不可信**：连续配音（停顿 <0.2 s）时任何 1–2 s 窗口都落在有声段，比例法时间轴偏差 p50 13.3 s 仍能过 VAD（实测 87.9% 通过）。必须带 `--asr` 做内容级比对；中文数字要先归一化才能比（字幕「二零一八」↔ ASR「2018」，不归一化会误报 4 条）。
 
 **`splice` 的正确用法**：内容层之外的改动（保留区，例如 MID 层的岩壁开关 `CL0/CL1`）不会随内容段迁移，必须回填基座，否则下次重建会丢。首次 `--base` 指基座、之后指产物自身，往返可逐字节重建。
+
+#### 检查点事件制（2026-10-29 第三关样片通过，全片标准）
+
+跑酷段不能"一路只跑 + 捡币"，必须按口播内容布事件。事件全部写在 `cues_game_full.json` 的 `stages[k].events[]`，渲染器只读数据、不写死时间。
+
+**两类事件**
+
+| 类型 | 行为 | 数据结构 | 画面 |
+|---|---|---|---|
+| `minor` | **不停跑**，路过即触发 | `{t, kind:'minor', sign:'≤6字', obj:'mounds'}` | 路边语义物件画在 `heroXG(t)+42`，其上方 17 px 弹出文字卡（金边黑底），`t-0.2s` 出现、`t+1.4s` 消失 |
+| `major` | **全屏特写**，主角停 1.3–1.6 s | `{t, kind:'major', dur:1.6, title:'≤6字', sub:'≤12字', obj:'office'}` | `t-0.5` 预备（主角 flinch 一惊）→ `t..t+dur` 特写 → `+0.5` 收势；`SEGS` 自动插入 `v=0` 段，闪白切入切出 |
+
+**布点规则**
+- 时长 ≥25 s 的关：4–6 个事件（minor : major ≈ 2:1）；12–25 s：2–3 个；**<6 s 的过渡关不设事件**，靠远景生长（`farTomb` 迎面变大）+ 路牌承担。
+- 每 6–8 s 至少 1 个事件；两个 major 之间必须留 ≥2.5 s 跑动。
+- 事件 `t` 必须落在**字幕句首 0.1–0.35 s 后**（念到那句才触发），不要落在句中。
+- 每关再配 2–3 套子场景：`scenes:['village','office','graves'] + sceneSwitch:[32.05,41.5]`（`sceneSwitch[i]` 是切到 `scenes[i+1]` 的时刻）。远景层按场景换装，地面材质跟着换（`groundStone` / `groundDeck` / `drawGround`）。
+
+**四条硬约束（`tools/check_events.mjs` 自动查，不过不许渲）**
+1. major 窗口 `[t-0.6, t+dur+0.6]` 内**不得有 stomps**（踩怪要跑动，停下跳会变成原地蹦）；`±2.0 s` 内不得有 signs，`±1.5 s` 内不得有 bubbles（都被特写盖住，白丢一次 cue）。
+2. **窗口内的金币必须从 `cues.coins` 删掉**。金币音效与画面同源，特写把它盖住 → 观众听见叮的一声却什么都没捡到。删完检查该关金币最大空档 ≤2.4 s，超了就补一枚在窗口外。
+3. minor 与 signs / bubbles / 另一个 minor 的时间差 ≥2.2 s（都画在 `hero+42~54` 同一片区域，叠加就是一团糊）。
+4. 特写内部**必须自带动效**：浮尘 6 颗（22 px 扫光带 `(f*7)%(W+80)`）。1.3 s 静止画面直接踩密度红线（实测 1.30 s 那段只有 6 px 位移，密度 0.4%）。
+
+**文字入框**：`text()` 的 `y` 是**基线**（字形画在 `y-12..y`），居中要 `base = 框顶 + (框高-12)/2 + 12`；横向用 `textW(str,'Fusion Pixel 12',12)` 算宽，框宽 = `tw+10~12`。写死坐标必溢出（第三关首版匾额、路牌全踩过）。
+
+**新增特写 / 物件时的落点**
+- 新特写分支加在 `drawCloseup` 的 `if (m.obj===...)` 链里，物件超过 3 个就抽函数；
+- 新路边物件加在 `drawMinorObj`，只用**固定 `M(i)`**（环境槽 `E.*` 随调色变色，`E.dD` 只剩土色系可用）；
+- 新子场景远景加在 `zoneBG`，道具世界坐标必须落在 `[cx·pf, cx·pf+320]` 内（`cx` 最大约 8500），拍脑袋写 7000/5600 会让大鸟居永远在屏外。
 
 ### 素材库
 
