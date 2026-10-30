@@ -2,14 +2,14 @@
   "pipeline": "xiangsu",
   "project": "005_曹操",
   "frozen_at": "2026-10-30",
-  "note": "《曹操》30 秒样片（0–29.4 s / 11 镜）固化：640×360 索引色栅格 ×3 整数最近邻 → 1920×1080，CRT 在输出分辨率。全片在此冻结基线上扩到 45 镜 / 187 s。",
+  "note": "《曹操》全片（0–187 s / 45 镜 / 5610 帧）固化：640×360 索引色栅格 ×3 整数最近邻 → 1920×1080，CRT 在输出分辨率。30 秒样片交付件（SHA-256 174aacf1…）保持不变；样片与全片共用 parts/20-scenes.js，样片尾镜补了 1px 纵向呼吸，用当前源码重建样片会有极细微动效差异，以已交付样片为准。",
   "spec": {
     "framebuffer": [640, 360],
     "upscale": "3x nearest-neighbour",
     "output": [1920, 1080],
     "fps": 30,
-    "frames": 882,
-    "duration_s": 29.4,
+    "frames": 5610,
+    "duration_s": 187,
     "video": "h264 high / yuv420p / crf 14 / preset slow / aq-mode=3",
     "audio": "aac 48000 Hz 2ch / loudnorm I=-16 TP=-1.5 LRA=11 (two-pass)",
     "crt": {
@@ -19,30 +19,44 @@
     }
   },
   "content_layer": {
-    "order": ["parts/00-engine.js", "parts/10-helpers.js", "parts/20-scenes.js", "parts/90-tail.js"],
-    "assemble": "build.sh 每次拼装 parts/*.js → demo/film.js 并做 node --check",
-    "shots": 11,
-    "cues": "cuts 10 / subs 22 / hits 20"
+    "order": ["parts/00-engine.js", "parts/10-helpers.js", "parts/20-scenes.js", "parts/40-scenes-full.js", "parts/90-tail.js"],
+    "assemble": "build.sh 每次拼装 parts/*.js → demo/film.js 并做 node --check；样片模式不含 40-scenes-full.js",
+    "shots": 45,
+    "cues": "cuts 44 / subs 154 / hits 54 / impacts 19 / scenes 45"
   },
   "sources": {
     "demo/index.html": "69117f1ecc9d189da19af8e144ce93037cfcd9713439579720ef5efedf3cc466",
-    "demo/film.js": "305967f5ab02ba87e3e62e2d6f35ba83db490da9ba5d57cd9fb4f68f96c064cd",
+    "demo/index-full.html": "5d26ea34da7321ea73235a7b29f1427a5d1c6037c2ca52f3f34143d1406015ca",
+    "demo/film.js": "32d3826fba2f4175f88b1d2a4e1f6c29ec25095ef9e92fb683b1436f772d4264",
     "demo/sprites.js": "ef19041da186ff4bffcda46cc1d64fd63e343187f8a5218b1429ae32cbb4475f",
     "demo/cues.json": "98f01015fe93e49ca473166852632b89c35f83f7e419fdfe2f5425fd8ff36302",
+    "demo/cues-full.json": "afd86db3180dbb9d9a887d49a2c687269906db0e814b6b97b718b02760783071",
     "demo/audio.py": "19fa96da222ce3609715b6eff465140647f83c6f8a2629b01d619b86a2827896",
-    "make_audio.sh": "cb6bc1b4fd7b567c1450850958a83b935ea8cf0b61f8006a018ddb44ae41a49a",
-    "build.sh": "532426d2087d12a5b609b2b1916caeb834d0adc95b978a641eb7e40697431477",
+    "demo/audio_full.py": "1cd0cb053cb8e3f366e2485e52de56f64d992025745619d35cc5c8eee9a3cb69",
+    "make_audio.sh": "283fdccddd35f45fe1a4dd55011c8de900175c6329eb3a17e8a37ac6f1f99c84",
+    "build.sh": "87bcf07da625820d988ddcacbc147d51ff7ba5bc0ffdfa699cb54f887f2f88a4",
+    "build_cues.mjs": "5c9b774f3ccd6b541bc7cd023931ec38a08464577ae779ea74edc83e7187a839",
+    "build_index.mjs": "8a6129aeb7957fa160c3777f9447615e464c718f37118ad1f253cc4967e330ca",
+    "make_covers.mjs": "03352346992dd0b183887ed494bf7460887c5c3d1d2b1477ff6e0799cd937fb0",
     "verify.mjs": "76ba35347f7f2ecd44b039d00890ee27f7a8f90b553cf1d87df8c94564330777",
     "parts/00-engine.js": "919d8ee17cf41565cab35e88533fd8cbaf6eb84bc99a978853f81b77617b0920",
     "parts/10-helpers.js": "bc7e831fdadb93ebd31a00cf1828a428961b50bfa234fc8ea3fe4f0fb4cd84e5",
-    "parts/20-scenes.js": "921b5fd07af82308f8ea948299a7339b057abd314f3ca425a0523a26fedeb85f",
-    "parts/90-tail.js": "fe74c86ab55444896256cf0da3ba35e095607d79181793e962e15a7c6199b008"
+    "parts/20-scenes.js": "1128fec133bb1f06792a9b8ff4f4e8f0cfab23e8c36221bc71d3f501595bd306",
+    "parts/40-scenes-full.js": "0f4983e053780f113dd63ca1aa686d8c3ecae793a2690ab7739ed526841efc1b",
+    "parts/90-tail.js": "33788b9e6b6e23a17049a84cb28157d803295ba3772565f1fdf99392e65b120a"
   },
   "voice": {
     "path": "D:/@kaifa/yandi/output/020_曹操/配音.wav",
     "spec": "pcm_s16le 44100 Hz mono 186.88 s"
   },
   "deliverable": {
+    "path": "D:/@kaifa/yandi/out/5 曹操/xiangsu曹操_全片.mp4",
+    "archive_path": "D:/@kaifa/yandi/out/5 曹操/源文件/xiangsu曹操_全片_1920x1080.mp4",
+    "bytes": 89851151,
+    "sha256": "db0c8333b037a090ccc248b0ca9d4fb951585818fca4ff87f9ffb8de7a8fbe6b",
+    "ffprobe": "1920x1080 h264/yuv420p 30fps 5610f 187.000s; aac 48000 Hz 2ch"
+  },
+  "sample_deliverable": {
     "path": "D:/@kaifa/yandi/out/5 曹操/源文件/样片_前30秒_xiangsu_1920x1080.mp4",
     "bytes": 17056862,
     "sha256": "174aacf1ae6537fe2376b03bd969bb1598e9bd7213a52894d475f04e6fde6fb5",
@@ -51,12 +65,14 @@
   "verification": {
     "result": "PASS 4/4",
     "spec": "PASS",
-    "loudness": { "result": "PASS", "integrated_lufs": -16.05, "true_peak_dbtp": -1.44, "lra_lu": 1.1 },
-    "density": { "result": "PASS", "longest_static_s": 0.57, "longest_static_at_s": 28.7 },
+    "loudness": { "result": "PASS", "integrated_lufs": -16.02, "true_peak_dbtp": -1.44, "lra_lu": 1.3 },
+    "density": { "result": "PASS", "longest_static_s": 0.47, "longest_static_at_s": 135.83 },
     "pixel_density": {
       "result": "PASS",
       "criteria": "inner col MAD < 2.5, recon mean < 2.0, edge > inner; gt12 chroma-bleed ratio reported only",
-      "probes_pct_gt12_range": [0.468, 1.748]
+      "inner_mad_max": 0.67,
+      "recon_mean_max": 1.0,
+      "probes_pct_gt12_range": [0.432, 1.544]
     }
   },
   "known_caveat": "yuv420p 色度 2×2 亚采样会在高饱和 1px 细节上产生晕染；冻结管线旧交付片同口径实测最高约 2.9%，gt12 占比不设硬门槛。",

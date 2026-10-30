@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 # xiangsu-caocao · 确定性音轨（chiptune + SFX + 配音 → 两遍 loudnorm -16 LUFS）
-# 用法: bash make_audio.sh [demo目录]       默认 = 本包 demo/
+# 用法: bash make_audio.sh [demo目录] [full]   默认 = 本包 demo/，样片 29.4 s
+#       full = 全片 187 s（跑 audio_full.py）
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DEMO="${1:-$HERE/demo}"
+MODE="${2:-sample}"
 PY="${XIANGSU_PY:-D:/@kaifa/openviking/.venv/Scripts/python.exe}"
 VOICE="${XIANGSU_VOICE:-D:/@kaifa/yandi/output/020_曹操/配音.wav}"
+SCRIPT=audio.py
+[ "$MODE" = full ] && SCRIPT=audio_full.py
 
 cd "$DEMO"
 mkdir -p out
-XIANGSU_VOICE="$VOICE" "$PY" audio.py
+XIANGSU_VOICE="$VOICE" "$PY" "$SCRIPT"
 
 ffmpeg -hide_banner -nostats -y -i out/mix_raw.wav \
   -af "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json" -f null - 2> out/_loudnorm_pass1.json

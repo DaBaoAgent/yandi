@@ -842,6 +842,9 @@ function sh10_sees(t, f) {
 
 // ---------------------------------------------------------------- SHOT 11 · 27.9–29.4 直接纳了
 function sh11_take(t, f) {
+  // 结尾半秒画面几乎全静（密度验收卡边缘），加纵向 1px 呼吸带动满屏噪点纹理
+  const jy = Math.round(Math.sin(t * 4.7) * 1.6);
+  GY += jy;
   // 深红底：8 条实色横带（不用 1px 棋盘——色度采样会糊）
   for (let i = 0; i < 8; i++) {
     const c = mixIdx(17, 9, i / 7), y0 = Math.round(-8 + i * 40), y1 = Math.round(-8 + (i + 1) * 40 + 1);

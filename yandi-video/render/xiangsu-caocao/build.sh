@@ -58,15 +58,15 @@ rm -f "$HERE/tmp/_film_check.mjs"
 mkdir -p "$DEMO/out" "$PROJ/源文件"
 cp "$INDEX_SRC" "$DEMO/index.html"
 cp "$CUES_SRC" "$DEMO/cues.json"
-cp "$HERE/demo/film.js" "$HERE/demo/sprites.js" "$HERE/demo/audio.py" "$DEMO/"
+cp "$HERE/demo/film.js" "$HERE/demo/sprites.js" "$HERE/demo/audio.py" "$HERE/demo/audio_full.py" "$DEMO/"
 
 if [ "$NO_AUDIO" = 0 ]; then
-  bash "$HERE/make_audio.sh" "$DEMO"
+  bash "$HERE/make_audio.sh" "$DEMO" "$MODE"
 fi
 [ -f "$DEMO/out/audio.wav" ] || { echo "缺少 $DEMO/out/audio.wav，先跑 bash make_audio.sh"; exit 1; }
 
 (cd "$REPO" && MG_CHROME="$CHROME" MG_GPU_ARGS="--use-angle=d3d11 --no-sandbox" \
-  node harness/render.mjs "$(basename "$DEMO")" \
+  node harness/render.mjs "demos/$(basename "$DEMO")" \
   --w 1920 --h 1080 --fps 30 --duration "$DUR" \
   --audio "demos/$(basename "$DEMO")/out/audio.wav" --crf "$CRF" --out "$OUT")
 

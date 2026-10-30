@@ -58,10 +58,14 @@ function subtitle(t, f) {
     x += textW(vis[i]) * SC;
   }
 }
+// 震动锚点：cues.impacts（全片 19 个重音）；旧样片 cues 无该字段时退回固定表
+const SHAKE_LIST = cues.impacts
+  ? cues.impacts.map(o => [o.t, o.a])
+  : [[T('stamp'), 3], [T('battle'), 3], [T('sweep'), 2], [T('year'), 2],
+    [T('death'), 2], [T('handover'), 2], [T('surrender'), 2], [T('deal'), 2], [T('take'), 2], [T('nazhao'), 3]];
 function shakeXY(t) {
   let amp = 0;
-  for (const [tt, a] of [[T('stamp'), 3], [T('battle'), 3], [T('sweep'), 2], [T('year'), 2],
-    [T('death'), 2], [T('handover'), 2], [T('surrender'), 2], [T('deal'), 2], [T('take'), 2], [T('nazhao'), 3]]) {
+  for (const [tt, a] of SHAKE_LIST) {
     if (t >= tt && t < tt + 0.22) amp = Math.max(amp, Math.round(a * (1 - (t - tt) / 0.22)));
   }
   if (!amp) return [0, 0];
